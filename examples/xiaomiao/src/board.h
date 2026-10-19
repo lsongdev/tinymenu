@@ -18,12 +18,3 @@
 #define BUTTON_RIGHT_PIN 35
 #define BUTTON_A_PIN 34
 #define BUTTON_B_PIN 12
-
-// Analog sensors on ADC1: light on GPIO36, an NTC thermistor (10k, beta 3950, to ground
-// under a 10k series resistor) on GPIO39.
-#define LIGHT_PIN 36
-#define THERMISTOR_PIN 39
-#define ADC_REFERENCE 3.3f
-#define THERMISTOR_SERIES 10000.0f
-#define THERMISTOR_R25 10000.0f
-#define THERMISTOR_BETA 3950.0f

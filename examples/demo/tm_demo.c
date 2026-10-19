@@ -11,8 +11,8 @@
 static tm_ui* demo_ui;
 
 // Pages
-static tm_menu_page home_page; // tiles, a grid or an icon list (Style -> Home as)
-static tm_list_page display_page, sound_page, ringtone_page, network_page, style_page, about_page;
+static tm_menu_page home_page; // tiles, a grid or an icon list (Settings -> Home as)
+static tm_list_page display_page, sound_page, ringtone_page, network_page, settings_page, about_page;
 static tm_wave_page sensor_page;
 static tm_list_page stats_page;
 static tm_chart_page week_chart, spectrum_chart;
@@ -28,10 +28,10 @@ static tm_list_popup sleep_popup, dim_popup, transition_popup, highlight_popup,
     home_as_popup;
 
 //-------- Home
-enum { HOME_DISPLAY, HOME_SOUND, HOME_NETWORK, HOME_SENSOR, HOME_STYLE, HOME_ABOUT,
-       // Stats opens charts; the others are examples with nothing behind them, so a grid has
-       // rows to scroll through.
-       HOME_CLOCK, HOME_BATTERY, HOME_STATS, HOME_MUSIC, HOME_MAIL, HOME_LOCK };
+enum { HOME_DISPLAY, HOME_SOUND, HOME_NETWORK, HOME_SENSOR,
+       // Stats opens charts; the other middle entries give the grid rows to scroll through.
+       HOME_CLOCK, HOME_BATTERY, HOME_STATS, HOME_MUSIC, HOME_MAIL, HOME_LOCK,
+       HOME_SETTINGS, HOME_ABOUT };
 static tm_icon home_icons[] = { // in HOME_* order
     {
         0xFC, 0xFE, 0x7F, 0x3F, 0x1F, 0x0F, 0x07, 0x83, 0x81, 0x01, 0x01, 0x01, 0x01, 0x01, 0xE1,
@@ -73,26 +73,6 @@ static tm_icon home_icons[] = { // in HOME_* order
         0x0F, 0x1F, 0x3F, 0x3F, 0x3E, 0x3C, 0x38, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
         0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x30, 0x38, 0x3C, 0x3E, 0x3F, 0x3F, 0x1F, 0x0F,
     }, // Sensor
-    {
-        0xFC, 0xFE, 0x7F, 0x3F, 0x1F, 0x0F, 0x07, 0x03, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-        0x81, 0xC1, 0xC1, 0xC1, 0x81, 0x01, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFE, 0xFC,
-        0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x41, 0xE1, 0xF1, 0xF1, 0xF1, 0xE1, 0x41, 0x41,
-        0x43, 0x47, 0x47, 0x47, 0x43, 0x41, 0x41, 0x41, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-        0xFF, 0xC0, 0x80, 0x00, 0x00, 0x00, 0x10, 0x10, 0x10, 0x11, 0x11, 0x11, 0x10, 0x10, 0x10,
-        0x10, 0x10, 0x38, 0x7C, 0x7C, 0x7C, 0x38, 0x10, 0x10, 0x00, 0x00, 0x00, 0x80, 0xC0, 0xFF,
-        0x0F, 0x1F, 0x3F, 0x3F, 0x3E, 0x3C, 0x38, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
-        0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x30, 0x38, 0x3C, 0x3E, 0x3F, 0x3F, 0x1F, 0x0F,
-    }, // Style
-    {
-        0xFC, 0xFE, 0x7F, 0x3F, 0x1F, 0x0F, 0x07, 0x03, 0x01, 0x01, 0x01, 0x01, 0x81, 0x81, 0x81,
-        0x81, 0x81, 0x81, 0x01, 0x01, 0x01, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFE, 0xFC,
-        0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x0C, 0x06, 0x03, 0x01, 0x00, 0x00, 0xE6,
-        0xE6, 0x00, 0x00, 0x01, 0x03, 0x06, 0x0C, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-        0xFF, 0xC0, 0x80, 0x00, 0x00, 0x00, 0x00, 0x03, 0x0C, 0x18, 0x30, 0x20, 0x40, 0x40, 0x4F,
-        0x4F, 0x40, 0x40, 0x20, 0x30, 0x18, 0x0C, 0x03, 0x00, 0x00, 0x00, 0x00, 0x80, 0xC0, 0xFF,
-        0x0F, 0x1F, 0x3F, 0x3F, 0x3E, 0x3C, 0x38, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
-        0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x30, 0x38, 0x3C, 0x3E, 0x3F, 0x3F, 0x1F, 0x0F,
-    }, // About
     {
         0xE0, 0xF0, 0xF8, 0xFC, 0xFE, 0xFF, 0xFF, 0xFF, 0x7F, 0x7F, 0x3F, 0x3F, 0x9F, 0x9F, 0x9F,
         0x9F, 0x9F, 0x9F, 0x3F, 0x3F, 0x7F, 0x7F, 0xFF, 0xFF, 0xFF, 0xFE, 0xFC, 0xF8, 0xF0, 0xE0,
@@ -153,6 +133,26 @@ static tm_icon home_icons[] = { // in HOME_* order
         0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F,
         0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x3F, 0x1F, 0x0F, 0x07, 0x03, 0x01,
     }, // Lock
+    {
+        0xFC, 0xFE, 0x7F, 0x3F, 0x1F, 0x0F, 0x07, 0x03, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+        0x81, 0xC1, 0xC1, 0xC1, 0x81, 0x01, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFE, 0xFC,
+        0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x41, 0x41, 0xE1, 0xF1, 0xF1, 0xF1, 0xE1, 0x41, 0x41,
+        0x43, 0x47, 0x47, 0x47, 0x43, 0x41, 0x41, 0x41, 0x41, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+        0xFF, 0xC0, 0x80, 0x00, 0x00, 0x00, 0x10, 0x10, 0x10, 0x11, 0x11, 0x11, 0x10, 0x10, 0x10,
+        0x10, 0x10, 0x38, 0x7C, 0x7C, 0x7C, 0x38, 0x10, 0x10, 0x00, 0x00, 0x00, 0x80, 0xC0, 0xFF,
+        0x0F, 0x1F, 0x3F, 0x3F, 0x3E, 0x3C, 0x38, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+        0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x30, 0x38, 0x3C, 0x3E, 0x3F, 0x3F, 0x1F, 0x0F,
+    }, // Settings
+    {
+        0xFC, 0xFE, 0x7F, 0x3F, 0x1F, 0x0F, 0x07, 0x03, 0x01, 0x01, 0x01, 0x01, 0x81, 0x81, 0x81,
+        0x81, 0x81, 0x81, 0x01, 0x01, 0x01, 0x01, 0x03, 0x07, 0x0F, 0x1F, 0x3F, 0x7F, 0xFE, 0xFC,
+        0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x0C, 0x06, 0x03, 0x01, 0x00, 0x00, 0xE6,
+        0xE6, 0x00, 0x00, 0x01, 0x03, 0x06, 0x0C, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+        0xFF, 0xC0, 0x80, 0x00, 0x00, 0x00, 0x00, 0x03, 0x0C, 0x18, 0x30, 0x20, 0x40, 0x40, 0x4F,
+        0x4F, 0x40, 0x40, 0x20, 0x30, 0x18, 0x0C, 0x03, 0x00, 0x00, 0x00, 0x00, 0x80, 0xC0, 0xFF,
+        0x0F, 0x1F, 0x3F, 0x3F, 0x3E, 0x3C, 0x38, 0x30, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,
+        0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x30, 0x38, 0x3C, 0x3E, 0x3F, 0x3F, 0x1F, 0x0F,
+    }, // About
 };
 #define EXAMPLE "An example item: there is nothing behind it."
 static tm_option home_options[] = {
@@ -160,14 +160,14 @@ static tm_option home_options[] = {
     [HOME_SOUND] = {.text = "Sound", .icon = home_icons[HOME_SOUND]},
     [HOME_NETWORK] = {.text = "Network", .icon = home_icons[HOME_NETWORK]},
     [HOME_SENSOR] = {.text = "Sensor", .icon = home_icons[HOME_SENSOR]},
-    [HOME_STYLE] = {.text = "Style", .icon = home_icons[HOME_STYLE]},
-    [HOME_ABOUT] = {.text = "About", .icon = home_icons[HOME_ABOUT]},
     [HOME_CLOCK] = {.text = "Clock", .icon = home_icons[HOME_CLOCK], .content = EXAMPLE},
     [HOME_BATTERY] = {.text = "Battery", .icon = home_icons[HOME_BATTERY], .content = EXAMPLE},
     [HOME_STATS] = {.text = "Stats", .icon = home_icons[HOME_STATS]},
     [HOME_MUSIC] = {.text = "Music", .icon = home_icons[HOME_MUSIC], .content = EXAMPLE},
     [HOME_MAIL] = {.text = "Mail", .icon = home_icons[HOME_MAIL], .content = EXAMPLE},
     [HOME_LOCK] = {.text = "Lock", .icon = home_icons[HOME_LOCK], .content = EXAMPLE},
+    [HOME_SETTINGS] = {.text = "Settings", .icon = home_icons[HOME_SETTINGS]},
+    [HOME_ABOUT] = {.text = "About", .icon = home_icons[HOME_ABOUT]},
 };
 
 
@@ -215,11 +215,11 @@ static tm_option network_options[] = {
 };
 static char forget_question[64];
 
-//-------- Sensor: two live waves
+//-------- Sensor: four simulated waves
 #define WAVE_DEPTH 320 // samples kept per wave; a stopped wave can scroll back through them
 static int16_t temperature_samples[WAVE_DEPTH], light_samples[WAVE_DEPTH],
     vibration_samples[WAVE_DEPTH], gpio_samples[WAVE_DEPTH];
-// One wave of each kind. A board can supply real readings (tm_demo_set_sensors).
+// One wave of each kind, with samples generated by tm_demo_feed.
 enum { WAVE_TEMPERATURE, WAVE_LIGHT, WAVE_VIBRATION, WAVE_GPIO };
 static tm_wave_data sensor_waves[] = {
     [WAVE_TEMPERATURE] = {.text = "Temperature", .type = TM_WAVE_SOLID,
@@ -229,18 +229,10 @@ static tm_wave_data sensor_waves[] = {
                     .depth = WAVE_DEPTH, .fixed_min = 0, .fixed_max = 100},
     [WAVE_VIBRATION] = {.text = "Vibration", .type = TM_WAVE_DASH, .data = vibration_samples,
                         .depth = WAVE_DEPTH, .decimals = TM_DECIMALS_2},
-    // A digital input: steps, on a fixed 0..1 axis.
+    // A simulated digital input: steps, on a fixed 0..1 axis.
     [WAVE_GPIO] = {.text = "GPIO", .type = TM_WAVE_STEP, .data = gpio_samples,
                    .depth = WAVE_DEPTH, .fixed_min = 0, .fixed_max = 1},
 };
-static tm_demo_sensors sensors;
-static int16_t last_temperature; // tenths of a degree, for the home page's status bar
-
-void tm_demo_set_sensors(const tm_demo_sensors* s) {
-    sensors = *s;
-    if (s->gpio_name)
-        sensor_waves[WAVE_GPIO].text = s->gpio_name;
-}
 
 //-------- Stats: a week of numbers as columns, rows or a line, and a live spectrum
 enum { STATS_TITLE, STATS_BARS, STATS_ROWS, STATS_LINE, STATS_SPECTRUM };
@@ -262,26 +254,26 @@ static tm_option week[] = {
 static tm_option spectrum[SPECTRUM_BANDS];
 static char spectrum_names[SPECTRUM_BANDS][8];
 
-//-------- Style: the look of the whole UI, changed live
+//-------- Settings: the look of the whole UI, changed live
 enum {
-    STYLE_TITLE, STYLE_ANIMATE, STYLE_TRANSITION, STYLE_HIGHLIGHT, STYLE_HOME_AS,
-    STYLE_ROUNDED,
-    STYLE_FULL_ROW, STYLE_LOOP,
-    STYLE_DIM, STYLE_MOTION, STYLE_CLASSIC, STYLE_DEFAULT,
+    SETTINGS_TITLE, SETTINGS_ANIMATE, SETTINGS_HOME_AS, SETTINGS_TRANSITION, SETTINGS_HIGHLIGHT,
+    SETTINGS_ROUNDED,
+    SETTINGS_FULL_ROW, SETTINGS_LOOP,
+    SETTINGS_DIM, SETTINGS_MOTION, SETTINGS_CLASSIC, SETTINGS_DEFAULT,
 };
-static tm_option style_options[] = {
-    [STYLE_TITLE] = {.text = "[ Style ]"},
-    [STYLE_ANIMATE] = {.text = "Animate", .kind = TM_OPTION_SWITCH},
-    [STYLE_TRANSITION] = {.text = "Pages", .kind = TM_OPTION_TEXT},
-    [STYLE_HIGHLIGHT] = {.text = "Highlight", .kind = TM_OPTION_TEXT},
-    [STYLE_HOME_AS] = {.text = "Home as", .kind = TM_OPTION_TEXT},
-    [STYLE_ROUNDED] = {.text = "Rounded", .kind = TM_OPTION_SWITCH},
-    [STYLE_FULL_ROW] = {.text = "Full row", .kind = TM_OPTION_SWITCH},
-    [STYLE_LOOP] = {.text = "Wrap around", .kind = TM_OPTION_SWITCH},
-    [STYLE_DIM] = {.text = "Popup dim", .kind = TM_OPTION_TEXT},
-    [STYLE_MOTION] = {.text = "Motion ms", .kind = TM_OPTION_INT},
-    [STYLE_CLASSIC] = {.text = "Classic look", .mark = '*'},
-    [STYLE_DEFAULT] = {.text = "Default look", .mark = '*'},
+static tm_option settings_options[] = {
+    [SETTINGS_TITLE] = {.text = "[ Settings ]"},
+    [SETTINGS_ANIMATE] = {.text = "Animate", .kind = TM_OPTION_SWITCH},
+    [SETTINGS_HOME_AS] = {.text = "Home as", .kind = TM_OPTION_TEXT},
+    [SETTINGS_TRANSITION] = {.text = "Pages", .kind = TM_OPTION_TEXT},
+    [SETTINGS_HIGHLIGHT] = {.text = "Highlight", .kind = TM_OPTION_TEXT},
+    [SETTINGS_ROUNDED] = {.text = "Rounded", .kind = TM_OPTION_SWITCH},
+    [SETTINGS_FULL_ROW] = {.text = "Full row", .kind = TM_OPTION_SWITCH},
+    [SETTINGS_LOOP] = {.text = "Wrap around", .kind = TM_OPTION_SWITCH},
+    [SETTINGS_DIM] = {.text = "Popup dim", .kind = TM_OPTION_TEXT},
+    [SETTINGS_MOTION] = {.text = "Motion ms", .kind = TM_OPTION_INT},
+    [SETTINGS_CLASSIC] = {.text = "Classic look", .mark = '*'},
+    [SETTINGS_DEFAULT] = {.text = "Default look", .mark = '*'},
 };
 static tm_option DIM_CHOICES[] = {{.text = "None"}, {.text = "Light"}, {.text = "Half"}, {.text = "Dark"}, {.text = "Black"}};
 // In tm_transition order.
@@ -339,24 +331,10 @@ static void open_value(const tm_page* from, int32_t min, int32_t step, int32_t m
 }
 
 //-------- Callbacks
-// What the application draws on the home page (tm_page_set_draw): a status bar with the
-// temperature and where the selection is, above the tiles. The grid and lists fill the screen.
-static void home_status(const tm_page* page, tm_canvas* canvas) {
-    if (tm_menu_page_layout(&home_page) != TM_MENU_TILE || canvas->fb->h < 64)
-        return;
-    char text[16];
-    tm_format_fixed(text, sizeof(text) - 2, last_temperature, TM_DECIMALS_1);
-    strcat(text, " C");
-    tm_canvas_draw_str(canvas, 1, 0, Font_6_8, text);
-    const tm_option* sel = tm_menu_selected(page);
-    snprintf(text, sizeof(text), "%u/%u", sel->order + 1, home_page.menu.item_num);
-    tm_canvas_draw_str(canvas, canvas->w - (int16_t)tm_text_width(text, Font_6_8) - 1, 0, Font_6_8, text);
-}
-
 static bool home_cb(const tm_page* page, tm_msg msg) {
     static tm_page_addr const TARGETS[] = {
         [HOME_DISPLAY] = &display_page, [HOME_SOUND] = &sound_page, [HOME_NETWORK] = &network_page,
-        [HOME_SENSOR] = &sensor_page,   [HOME_STYLE] = &style_page, [HOME_ABOUT] = &about_page,
+        [HOME_SENSOR] = &sensor_page,   [HOME_SETTINGS] = &settings_page, [HOME_ABOUT] = &about_page,
         [HOME_STATS] = &stats_page,
     };
     if (msg != TM_MSG_CLICK)
@@ -465,20 +443,20 @@ static bool sensor_cb(const tm_page* page, tm_msg msg) {
     return false;
 }
 
-// Shows the UI's settings in the Style rows.
-static void style_rows_from_ui(void) {
+// Shows the UI's settings in the Settings rows.
+static void settings_rows_from_ui(void) {
     const tm_ui_params* p = &demo_ui->params;
-    style_options[STYLE_ANIMATE].val = p->style.animate;
-    style_options[STYLE_TRANSITION].content = TRANSITION_CHOICES[p->style.transition].text;
-    style_options[STYLE_HIGHLIGHT].content = HIGHLIGHT_CHOICES[p->style.highlight].text;
+    settings_options[SETTINGS_ANIMATE].val = p->style.animate;
+    settings_options[SETTINGS_TRANSITION].content = TRANSITION_CHOICES[p->style.transition].text;
+    settings_options[SETTINGS_HIGHLIGHT].content = HIGHLIGHT_CHOICES[p->style.highlight].text;
     for (uint8_t i = 0; i < COUNT(HOME_LAYOUTS); i++)
         if (HOME_LAYOUTS[i] == tm_menu_page_layout(&home_page))
-            style_options[STYLE_HOME_AS].content = HOME_AS_CHOICES[i].text;
-    style_options[STYLE_ROUNDED].val = p->style.radius != 0;
-    style_options[STYLE_FULL_ROW].val = p->style.highlight_width == TM_HIGHLIGHT_FULL_ROW;
-    style_options[STYLE_LOOP].val = p->loop_param[TM_LOOP_LIST];
-    style_options[STYLE_DIM].content = DIM_CHOICES[p->winbgblur_param[TM_POPUP_BLUR_VALUE]].text;
-    style_options[STYLE_MOTION].val = p->ani_param[TM_ANI_INDICATOR];
+            settings_options[SETTINGS_HOME_AS].content = HOME_AS_CHOICES[i].text;
+    settings_options[SETTINGS_ROUNDED].val = p->style.radius != 0;
+    settings_options[SETTINGS_FULL_ROW].val = p->style.highlight_width == TM_HIGHLIGHT_FULL_ROW;
+    settings_options[SETTINGS_LOOP].val = p->loop_param[TM_LOOP_LIST];
+    settings_options[SETTINGS_DIM].content = DIM_CHOICES[p->winbgblur_param[TM_POPUP_BLUR_VALUE]].text;
+    settings_options[SETTINGS_MOTION].val = p->ani_param[TM_ANI_INDICATOR];
 }
 
 static void set_motion_ms(uint16_t ms) {
@@ -494,39 +472,39 @@ static void set_popup_dim(tm_blur blur) {
         demo_ui->params.winbgblur_param[i] = blur;
 }
 
-static bool style_cb(const tm_page* page, tm_msg msg) {
+static bool settings_cb(const tm_page* page, tm_msg msg) {
     if (msg != TM_MSG_CLICK)
         return false;
     tm_ui_params* p = &demo_ui->params;
     switch (selected(page)->order) {
-    case STYLE_TITLE: return_home(page); return false;
-    case STYLE_DIM: open_choices(page, &dim_popup); return false;
-    case STYLE_TRANSITION: open_choices(page, &transition_popup); return false;
-    case STYLE_HIGHLIGHT: open_choices(page, &highlight_popup); return false;
-    case STYLE_HOME_AS: open_choices(page, &home_as_popup); return false;
-    case STYLE_MOTION: open_value(page, 0, 25, 500); return false;
-    case STYLE_CLASSIC: // the two presets: a plain menu, and the animated default
+    case SETTINGS_TITLE: return_home(page); return false;
+    case SETTINGS_DIM: open_choices(page, &dim_popup); return false;
+    case SETTINGS_TRANSITION: open_choices(page, &transition_popup); return false;
+    case SETTINGS_HIGHLIGHT: open_choices(page, &highlight_popup); return false;
+    case SETTINGS_HOME_AS: open_choices(page, &home_as_popup); return false;
+    case SETTINGS_MOTION: open_value(page, 0, 25, 500); return false;
+    case SETTINGS_CLASSIC: // the two presets: a plain menu, and the animated default
         tm_ui_set_preset(demo_ui, TM_PRESET_CLASSIC);
         break;
-    case STYLE_DEFAULT:
+    case SETTINGS_DEFAULT:
         tm_ui_set_preset(demo_ui, TM_PRESET_DEFAULT);
         break;
     default: // a switch; the list has already flipped its value
-        p->style.animate = style_options[STYLE_ANIMATE].val;
-        p->style.radius = style_options[STYLE_ROUNDED].val ? tm_default_params.style.radius : 0;
+        p->style.animate = settings_options[SETTINGS_ANIMATE].val;
+        p->style.radius = settings_options[SETTINGS_ROUNDED].val ? tm_default_params.style.radius : 0;
         p->style.highlight_width =
-            style_options[STYLE_FULL_ROW].val ? TM_HIGHLIGHT_FULL_ROW : TM_HIGHLIGHT_FIT_TEXT;
-        p->loop_param[TM_LOOP_LIST] = p->loop_param[TM_LOOP_LIST_POPUP] = style_options[STYLE_LOOP].val;
+            settings_options[SETTINGS_FULL_ROW].val ? TM_HIGHLIGHT_FULL_ROW : TM_HIGHLIGHT_FIT_TEXT;
+        p->loop_param[TM_LOOP_LIST] = p->loop_param[TM_LOOP_LIST_POPUP] = settings_options[SETTINGS_LOOP].val;
         break;
     }
-    style_rows_from_ui();
+    settings_rows_from_ui();
     return false;
 }
 
 static bool transition_cb(const tm_page* page, tm_msg msg) {
     if (msg == TM_MSG_CLICK) {
         demo_ui->params.style.transition = (tm_transition)transition_popup.select_item;
-        style_rows_from_ui();
+        settings_rows_from_ui();
     }
     return false;
 }
@@ -534,7 +512,7 @@ static bool transition_cb(const tm_page* page, tm_msg msg) {
 static bool highlight_cb(const tm_page* page, tm_msg msg) {
     if (msg == TM_MSG_CLICK) {
         demo_ui->params.style.highlight = (tm_highlight)highlight_popup.select_item;
-        style_rows_from_ui();
+        settings_rows_from_ui();
     }
     return false;
 }
@@ -575,7 +553,7 @@ static bool week_cb(const tm_page* page, tm_msg msg) {
 }
 
 static bool value_cb(const tm_page* page, tm_msg msg) {
-    if (msg == TM_MSG_CLICK && value_popup.bg_opt == &style_options[STYLE_MOTION])
+    if (msg == TM_MSG_CLICK && value_popup.bg_opt == &settings_options[SETTINGS_MOTION])
         set_motion_ms((uint16_t)value_popup.val);
     return false;
 }
@@ -599,10 +577,9 @@ static bool about_cb(const tm_page* page, tm_msg msg) {
 void tm_demo_init(tm_ui* ui) {
     demo_ui = ui;
     snprintf(screen_size, sizeof(screen_size), "%dx%d", ui->fb.w, ui->fb.h);
-    style_rows_from_ui();
+    settings_rows_from_ui();
 
     tm_menu_page_init(&home_page, ui, COUNT(home_options), home_options, TM_MENU_TILE, home_cb);
-    tm_page_set_draw(&home_page, home_status);
     tm_list_page_init(&display_page, ui, COUNT(display_options), display_options, TM_LIST_NORMAL,
                       display_cb);
     tm_list_page_init(&sound_page, ui, COUNT(sound_options), sound_options, TM_LIST_NORMAL, sound_cb);
@@ -625,7 +602,7 @@ void tm_demo_init(tm_ui* ui) {
     }
     tm_chart_page_init(&spectrum_chart, ui, SPECTRUM_BANDS, spectrum, TM_CHART_BAR, NULL);
     spectrum_chart.max = 100;
-    tm_list_page_init(&style_page, ui, COUNT(style_options), style_options, TM_LIST_NORMAL, style_cb);
+    tm_list_page_init(&settings_page, ui, COUNT(settings_options), settings_options, TM_LIST_NORMAL, settings_cb);
     tm_list_page_init(&about_page, ui, COUNT(about_options), about_options, TM_LIST_NORMAL, about_cb);
 
     // Shared popups read the row they open on and write the result back to it.
@@ -680,25 +657,18 @@ static void feed_update(uint32_t now_ms) {
 void tm_demo_feed(uint32_t now_ms) {
     feed_update(now_ms);
     const float t = now_ms / 1000.0f;
-    // Real readings where the board has them; otherwise 23.5 C drifting by a degree or so, light
-    // fading slowly, and an input switching in a fixed pattern, one bit every 200 ms.
-    int16_t v;
-    if (!sensors.temperature || !sensors.temperature(&v))
-        v = (int16_t)(235 + 12 * sinf(t * 0.7f) + 4 * sinf(t * 3.1f));
-    tm_wave_page_push(&sensor_page, WAVE_TEMPERATURE, v);
-    if (v != last_temperature && tm_ui_current_page(demo_ui) == &home_page.menu.page)
-        demo_ui->is_motionless = false; // the status bar shows it
-    last_temperature = v;
-    if (!sensors.light || !sensors.light(&v))
-        v = (int16_t)(55 + 30 * sinf(t * 0.4f) + 8 * sinf(t * 2.9f));
-    tm_wave_page_push(&sensor_page, WAVE_LIGHT, v);
+    // Simulated readings: 23.5 C drifting by a degree or so, light fading slowly,
+    // and an input switching in a fixed pattern, one bit every 200 ms.
+    const int16_t temperature = (int16_t)(235 + 12 * sinf(t * 0.7f) + 4 * sinf(t * 3.1f));
+    tm_wave_page_push(&sensor_page, WAVE_TEMPERATURE, temperature);
+    const int16_t light = (int16_t)(55 + 30 * sinf(t * 0.4f) + 8 * sinf(t * 2.9f));
+    tm_wave_page_push(&sensor_page, WAVE_LIGHT, light);
     // A decaying vibration that rings again every 4 s.
     const float ring = fmodf(t, 4.0f);
     tm_wave_page_push(&sensor_page, WAVE_VIBRATION, (int16_t)(300 * expf(-ring * 1.5f) * sinf(t * 18.0f)));
     static const char LEVELS[] = "1101000111001011";
-    if (!sensors.gpio || !sensors.gpio(&v))
-        v = LEVELS[(now_ms / 200) % (sizeof(LEVELS) - 1)] - '0';
-    tm_wave_page_push(&sensor_page, WAVE_GPIO, v);
+    const int16_t gpio = LEVELS[(now_ms / 200) % (sizeof(LEVELS) - 1)] - '0';
+    tm_wave_page_push(&sensor_page, WAVE_GPIO, gpio);
     // A spectrum: a falling envelope with beats moving across it.
     for (int i = 0; i < SPECTRUM_BANDS; i++) {
         const float level = 70.0f * expf(-i / 14.0f) * (0.55f + 0.45f * sinf(t * 5.0f + i * 0.8f)) +

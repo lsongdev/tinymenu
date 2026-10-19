@@ -234,7 +234,7 @@ The classic preset is the whole row inverted, square, redrawn only when a key
 is pressed. Without animation a key press costs one or two flushes (4–13 of the
 eight 8-row pages at 128x64, against 18–52 flushes when animated) and nothing
 is drawn or sent after that, which suits slow buses and busy MCUs. The demo has
-the switches and both presets on its Style page.
+the switches and both presets on its Settings page.
 
 ### Menus: list, icon list, tile, grid
 
@@ -286,9 +286,7 @@ tm_page_set_draw(&home, status);
 ```
 
 The UI only draws when something moves; when what the callback shows changes
-on its own (a reading), set `ui.is_motionless = false` to have it drawn. The
-demo's home page shows the temperature and the position of the selection
-this way.
+on its own (a reading), set `ui.is_motionless = false` to have it drawn.
 
 A list popup (`tm_list_popup`) is a menu too: it starts the same way and takes
 options. Its rows show the text, with the option's icon when the popup has an
@@ -326,9 +324,10 @@ tm_menu_page_init(&home, &ui, COUNT(items), items, TM_MENU_TILE, home_cb);
 tm_menu_page_set_layout(&home, TM_MENU_GRID); // or _ICON_LIST, _LIST, _TILE
 ```
 
-The demo's home page is one: Style → Home as switches it between tiles, a
-grid and an icon list. Its last six items are examples with nothing behind
-them, there so the grid has rows to scroll through.
+The demo's home page is one: Settings → Home as switches it between tiles, a
+grid and an icon list. Clock, Battery, Music, Mail and Lock are placeholder
+entries so the grid has rows to scroll through. Settings and About are the
+last two items in every layout.
 
 ### Charts and waves
 
@@ -356,9 +355,14 @@ chart.min = 0; chart.max = 100; // both 0: from the values
 selected one in the header), `_HBAR` a row per item with its label, bar and
 value, scrolling like a list, and `_LINE` points joined by lines. Change values
 whenever you like and call `tm_chart_page_refresh`; the demo's spectrum does
-it every 50 ms. In the demo, Stats shows a week three ways and a spectrum, and
-on the XiaoMiao the Sensor page shows the board's own thermistor, light sensor
-and the A button's GPIO (`tm_demo_set_sensors`; other boards simulate them).
+it every 50 ms. In the demo, Stats shows a week three ways and a spectrum. The
+Sensor page simulates temperature, light, vibration and a digital signal on
+every board, so no sensor wiring or callbacks are needed.
+
+To use the shared demo, call `tm_demo_init(&ui)` after `tm_ui_init`, then call
+`tm_demo_feed(now_ms)` about every 50 ms alongside the normal `tm_ui_proc` loop.
+The Arduino examples use `tm_demo_tick(now_ms)` to advance both the demo data
+and the UI.
 
 ### Screen sizes
 
@@ -397,6 +401,7 @@ examples/
   matrixbit/        PlatformIO: YFROBOT Matrix:bit, SSD1306 128x64 over I2C
   xiaomiao/         PlatformIO: XiaoMiao handheld, ST7735 160x128 over SPI (LovyanGFX)
   m5stickc/         PlatformIO: original M5StickC, ST7735S 160x80
+  folotoy/          PlatformIO: FoloToy AI Passport (ESP32-C3), ST7789P3 240x320
 test/               host renderer, snapshots, unit checks, ESP-IDF build check
 docs/design.md      how it works inside
 ```
@@ -421,12 +426,14 @@ pio run -d examples/matrixbit -t upload --upload-port <port>
 | Matrix:bit | A: next, long A: previous; B: click, long B: back | 10.6 ms / 4–9 ms (I2C at 1 MHz) |
 | XiaoMiao | D-pad moves, A: click, B: back | 8.7 ms / 1.5–5 ms (SPI at 40 MHz, DMA) |
 | M5StickC | B: next, long B: previous; A: click, long A or power: back | 9.8 ms / 2.5–8 ms |
+| [FoloToy AI Passport](examples/folotoy) | Up/down: previous/next (hold to repeat); OK: click, long OK: back | not measured (SPI at 40 MHz, 2x scaling) |
 
-All three demos use [tinybutton](https://github.com/lsongdev/tinybutton) for button
-debouncing, long presses and repeat. PlatformIO installs a pinned revision; GPIO
-sampling and mapping button events to `tm_msg` live in `tm_demo_arduino.h`.
+All demos use [tinybutton](https://github.com/lsongdev/tinybutton) for button
+debouncing, long presses and repeat. PlatformIO installs a pinned revision.
+`tm_demo_arduino.h` handles digital buttons; the FoloToy example reads its
+ADC ladder in `examples/folotoy/src/main.cpp`.
 
-All three accept input over serial (115200): `u` `d` `l` `r` are the d-pad,
+All accept input over serial (115200): `u` `d` `l` `r` are the d-pad,
 `.` and `,` next and previous, `e` clicks, `b` goes back, `p` prints frame timing and `s` dumps the framebuffer
 as hex.
 

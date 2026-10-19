@@ -79,33 +79,6 @@ static void flush(const tm_fb* fb, int16_t first_page, int16_t end_page, void*) 
     tm_demo_note_flush(micros() - start);
 }
 
-// The board's own sensors for the Sensor page (the formula is xiaomiao-shell's).
-static float average_volts(int pin) {
-    uint32_t mv = 0;
-    for (int i = 0; i < 8; i++) mv += analogReadMilliVolts(pin);
-    return mv / 8000.0f;
-}
-static bool read_temperature(int16_t* tenths) {
-    const float v = average_volts(THERMISTOR_PIN);
-    if (v <= 0.01f || v >= ADC_REFERENCE - 0.01f) return false; // open or shorted
-    const float r = THERMISTOR_SERIES * v / (ADC_REFERENCE - v);
-    const float c = 1.0f / (1.0f / 298.15f + logf(r / THERMISTOR_R25) / THERMISTOR_BETA) - 273.15f;
-    *tenths = (int16_t)lroundf(c * 10);
-    return true;
-}
-static bool read_light(int16_t* percent) {
-    *percent = (int16_t)min(100.0f, average_volts(LIGHT_PIN) * 100 / ADC_REFERENCE);
-    return true;
-}
-static bool read_button_a(int16_t* level) {
-    *level = digitalRead(BUTTON_A_PIN) == LOW; // active low: 1 while A is held
-    return true;
-}
-static const tm_demo_sensors board_sensors = {
-    .temperature = read_temperature, .light = read_light, .gpio = read_button_a,
-    .gpio_name = "GPIO34 (A)",
-};
-
 static tm_demo_button buttons[] = {
     {BUTTON_UP_PIN, "up", TM_MSG_UP, TM_MSG_NONE, true},
     {BUTTON_DOWN_PIN, "down", TM_MSG_DOWN, TM_MSG_NONE, true},
@@ -124,7 +97,6 @@ void setup() {
     for (tm_demo_button& b : buttons) b.begin();
 
     tm_ui_init(&ui, framebuffer, LCD_WIDTH, LCD_HEIGHT, flush, nullptr);
-    tm_demo_set_sensors(&board_sensors);
     tm_demo_init(&ui);
     tm_demo_begin(ui, "XiaoMiao");
 }

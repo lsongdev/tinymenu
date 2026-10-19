@@ -54,6 +54,26 @@ static void keys(const char *k)
               : *k == 'e' ? TM_MSG_CLICK : TM_MSG_RETURN);
 }
 
+/* Home items can be reordered without changing which demo the script opens. */
+static void select_home(const char *name)
+{
+    if(ui.current_page != ui.home_page)
+    {
+        fprintf(stderr, "expected home before selecting %s\n", name);
+        exit(1);
+    }
+    tm_menu_page *home = (tm_menu_page *)ui.home_page;
+    for(uint8_t i = 0; i < home->menu.item_num; i++)
+        if(strcmp(home->menu.option_array[i].text, name) == 0)
+        {
+            tm_menu_select(home, i);
+            run(150);
+            return;
+        }
+    fprintf(stderr, "home item not found: %s\n", name);
+    exit(1);
+}
+
 /* Writes the last frame as a binary PBM (P4): rows of packed bits, MSB first. */
 static void snapshot(const char *name)
 {
@@ -149,23 +169,29 @@ int main(int argc, char **argv)
     keys("bne");
     run(300);
     snapshot("19_sensor");
-    // Style: change the look of the whole UI.
-    keys("bne");
-    snapshot("20_style");
+    // Settings: change the look of the whole UI.
+    keys("b");
+    select_home("Settings");
+    keys("e");
+    snapshot("20_settings");
     keys("nnnnnnnne");
     snapshot("21_dim_popup");
     keys("b");
     keys("nne");
     snapshot("22_classic");
-    keys("ppppppp"); // up to Highlight: Fill -> Frame
+    keys("pppppp"); // up to Highlight: Fill -> Frame
     keys("ene");
     snapshot("23_outline");
-    keys("bppppe");
+    keys("b");
+    select_home("Display");
+    keys("e");
     snapshot("24_display_outline");
     keys("pe");
     snapshot("25_value_classic");
     // About: facts, and a message popup that scrolls.
-    keys("bbnnnnne");
+    keys("bb");
+    select_home("About");
+    keys("e");
     snapshot("26_about");
     keys("nnnne");
     snapshot("27_msg_popup");
@@ -210,7 +236,8 @@ int main(int argc, char **argv)
     // A d-pad goes by the screen: left/right along the tiles, up raises a value, and
     // the digit popup picks digits with left/right and changes them with up/down.
     ui.params = tm_default_params;
-    keys("blllll");
+    keys("b");
+    select_home("Display");
     snapshot("38_tile_dpad");
     keys("u"); // up on a row of tiles goes right, as up raises a value
     snapshot("38_tile_up");
@@ -242,7 +269,7 @@ int main(int argc, char **argv)
     run(24);
     snapshot("44_cascade");
     run(80);
-    // Home as a grid: the same home page laid out again (Style -> Home as); down a row
+    // Home as a grid: the same home page laid out again (Settings -> Home as); down a row
     // scrolls, a click opens the item.
     ui.params = tm_default_params;
     tm_menu_page* home = (tm_menu_page*)ui.home_page;
@@ -250,23 +277,23 @@ int main(int argc, char **argv)
     tm_menu_page_set_layout(home, TM_MENU_GRID);
     run(150);
     snapshot("45_grid");
-    keys("d"); // a row down: About
+    keys("d"); // a row down: Battery
     snapshot("46_grid_down");
     keys("e");
     snapshot("47_grid_open");
     keys("b");
     snapshot("48_grid_back");
-    tm_ui_send(&ui, TM_MSG_DOWN); // About -> Files: the grid scrolls a row
+    tm_ui_send(&ui, TM_MSG_DOWN); // Battery -> Mail: the grid scrolls a row
     run(8);
     snapshot("48_grid_scrolling");
     run(150);
-    keys("d"); // the last row: Lock
+    keys("d"); // the last row: About
     snapshot("48_grid_bottom");
     // ... and as an icon list: icons where the marks were, taller rows.
     tm_menu_page_set_layout(home, TM_MENU_ICON_LIST);
     run(150);
     snapshot("49_icon_list");
-    keys("pp"); // up two: Music
+    keys("pp"); // up two: Lock
     snapshot("50_icon_list_up");
     // One highlight for every menu: corners on list rows too.
     ui.params.style.highlight = TM_HIGHLIGHT_CORNERS;
@@ -310,7 +337,8 @@ int main(int argc, char **argv)
     keys("bne");
     snapshot("59_spectrum");
     // Sensor: the light level on a fixed axis, filled; a digital input in steps.
-    keys("bblllll"); // home, from Stats back to Sensor
+    keys("bb");
+    select_home("Sensor");
     keys("er");
     run(400);
     snapshot("60_wave_light");

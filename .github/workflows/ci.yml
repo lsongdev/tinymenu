@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        example: [matrixbit, xiaomiao, m5stickc]
+        example: [matrixbit, xiaomiao, m5stickc, folotoy]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/cache@v4
