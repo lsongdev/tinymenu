@@ -1,0 +1,26 @@
+{
+  "name": "tinymenu",
+  "version": "0.1.0",
+  "description": "Smooth, animated menu UI for small monochrome displays. Plain C, draws into its own 1-bit framebuffer; no display library needed.",
+  "keywords": "menu, ui, gui, oled, lcd, display, monochrome, animation",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lsongdev/tinymenu.git"
+  },
+  "authors": [
+    { "name": "lsongdev", "maintainer": true },
+    { "name": "Sheep118" },
+    { "name": "RQNG" }
+  ],
+  "license": "MPL-2.0",
+  "frameworks": "*",
+  "platforms": "*",
+  "headers": "tinymenu.h",
+  "build": {
+    "srcDir": "src",
+    "includeDir": "src"
+  },
+  "export": {
+    "exclude": ["test", "examples/*/.pio"]
+  }
+}
