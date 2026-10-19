@@ -1,7 +1,7 @@
 version: "0.1.0"
 description: Smooth, animated menu UI for small monochrome displays; draws into its own 1-bit framebuffer.
 url: https://github.com/lsongdev/tinymenu
-license: MPL-2.0
+license: AGPL-3.0-only
 files:
   exclude:
     - "test/**/*"

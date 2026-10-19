@@ -1,5 +1,7 @@
 # tinymenu
 
+[![CI build](https://github.com/lsongdev/tinymenu/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/lsongdev/tinymenu/actions/workflows/ci.yml)
+
 A smooth, animated menu UI for small monochrome displays, written in plain C.
 It draws into a 1-bit framebuffer you own and hands the rows that changed to a
 callback, so it depends on no display library: an SSD1306, an ST7735 or
@@ -17,13 +19,13 @@ anything else that can show a bitmap will do.
   handed to the display, found without a second framebuffer.
 - Screen size is set at run time. Several UIs can run side by side.
 
-
-
 ## Screenshots
 
-| Home | Value popup | Text input |
-|---|---|---|
-| ![Home menu](docs/screenshots/home.png) | ![Value popup](docs/screenshots/value-popup.png) | ![Text input](docs/screenshots/text-input.png) |
+| Screen | Preview |
+|---|---|
+| Home | ![Home menu](docs/screenshots/home.png) |
+| Value popup | ![Value popup](docs/screenshots/value-popup.png) |
+| Text input | ![Text input](docs/screenshots/text-input.png) |
 
 ## Quick start
 
@@ -55,7 +57,7 @@ void loop(void) {
 }
 ```
 
-[`examples/Basic/Basic.ino`](examples/Basic/Basic.ino) is the same thing as a
+[`examples/basic/basic.ino`](examples/basic/basic.ino) is the same thing as a
 complete Arduino sketch with an SSD1306, three buttons and a value popup.
 
 ### The framebuffer
@@ -389,7 +391,7 @@ src/
   pages/            full-screen pages: tile, grid, list, chart, wave
   popups/           popups: message, confirm, value, digit, text input, list, progress
 examples/
-  Basic/            minimal Arduino sketch (SSD1306, three buttons)
+  basic/            minimal Arduino sketch (SSD1306, three buttons)
   demo/             the demo: a settings menu that uses every page and popup, shared by
                     the boards below and the host test
   matrixbit/        PlatformIO: YFROBOT Matrix:bit, SSD1306 128x64 over I2C
@@ -446,8 +448,12 @@ the ESP-IDF component and the Arduino sketch.
 
 ## License
 
+tinymenu is licensed under the GNU Affero General Public License, version 3
+(`AGPL-3.0-only`). See [LICENSE](LICENSE) for the full terms.
+
 This project is a refactor of [WouoUI-PageVersion](https://github.com/Sheep118/WouoUI-PageVersion)
 by Sheep118 and contributors, itself based on the design of
 [WouoUI](https://github.com/RQNG/WouoUI) by RQNG.
 
-AGPL
+Code derived from WouoUI-PageVersion retains its upstream MPL-2.0 license
+notices. A copy of that license is included in [LICENSES/MPL-2.0.txt](LICENSES/MPL-2.0.txt).

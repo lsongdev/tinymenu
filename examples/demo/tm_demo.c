@@ -299,7 +299,7 @@ static tm_option about_options[] = {
     [ABOUT_TITLE] = {.text = "[ About ]"},
     [ABOUT_VERSION] = {.text = "Version", .kind = TM_OPTION_TEXT, .content = "0.1.0"},
     [ABOUT_SCREEN] = {.text = "Screen", .kind = TM_OPTION_TEXT, .content = screen_size},
-    [ABOUT_LICENSE] = {.text = "License", .kind = TM_OPTION_TEXT, .content = "MPL-2.0"},
+    [ABOUT_LICENSE] = {.text = "License", .kind = TM_OPTION_TEXT, .content = "AGPL-3.0-only"},
     [ABOUT_CREDITS] = {.text = "Credits", .content = "tinymenu is a refactor of WouoUI-PageVersion "
                                                      "by Sheep118, based on WouoUI by RQNG."},
     [ABOUT_KEYS] = {.text = "Keys", .content = "Up/down move, click opens or confirms, back "

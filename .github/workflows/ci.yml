@@ -68,4 +68,4 @@ jobs:
             - source-path: ./
             - name: Adafruit SSD1306
           sketch-paths: |
-            - examples/Basic
+            - examples/basic

@@ -2,7 +2,7 @@
   "name": "tinymenu-demo",
   "version": "0.1.0",
   "description": "Demo menu tree shared by the tinymenu examples and host test.",
-  "license": "MPL-2.0",
+  "license": "AGPL-3.0-only",
   "dependencies": { "tinymenu": "*" },
   "build": { "srcDir": ".", "includeDir": "." }
 }
