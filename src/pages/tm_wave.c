@@ -20,8 +20,6 @@
 #define WAVE_TEXT_D_S DEFAULT_WAVE_TEXT_D_S                     // 波形边框下边距
 #define WAVE_TEXT_W DEFAULT_WAVE_TEXT_W                         // 文字背景框宽度
 #define WAVE_SHOW_WIDTH(ui) (WAVE_BOX_W(ui) - 2)                         // 波形展示的宽度
-#define WAVE_TXT_SLIDESTR_MODE DEFAULT_WAVE_TXT_SLIDESTR_MODE   // 磁贴标题文本的滚动模式
-#define WAVE_VAL_SLIDESTR_MODE DEFAULT_WAVE_VAL_SLIDESTR_MODE   // 磁贴标题文本的滚动模式
 
 //--------WavePage相关方法和函数
 static int16_t _roundToNearestTen(int16_t value) {
@@ -118,16 +116,11 @@ void tm_wave_page_in_init(tm_page_addr page_addr) {
     tm_wave_page* self = (tm_wave_page*)page_addr;
     tm_ui* ui = self->page.ui;
     UNUSED_PARAMETER(page_addr);
-    self->vars.title_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_WAVE_TEXT];
-    self->vars.val_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_WAVE_TEXT];
-    self->vars.max_val_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_WAVE_VALUE];
-    self->vars.mid_val_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_WAVE_VALUE];
-    self->vars.min_val_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_WAVE_VALUE];
-    self->vars.title_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_WAVE_TEXT];
-    self->vars.val_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_WAVE_TEXT];
-    self->vars.max_val_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_WAVE_VALUE];
-    self->vars.mid_val_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_WAVE_VALUE];
-    self->vars.min_val_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_WAVE_VALUE];
+    self->vars.title_ss.slide_mode = ui->params.slide_mode;
+    self->vars.val_ss.slide_mode = ui->params.slide_mode;
+    self->vars.max_val_ss.slide_mode = ui->params.slide_mode;
+    self->vars.mid_val_ss.slide_mode = ui->params.slide_mode;
+    self->vars.min_val_ss.slide_mode = ui->params.slide_mode;
     wave_anim_reset(self);
 }
 
@@ -364,11 +357,11 @@ void tm_wave_page_init(tm_wave_page* wp,
     wp->page.page_type = TM_PAGE_WAVE;
     tm_page_init((tm_page_addr)wp, ui, call_back);
     memset(&wp->vars, 0, sizeof(wp->vars));
-    wp->vars.title_ss.slide_mode = (tm_slide_mode)WAVE_TXT_SLIDESTR_MODE;
-    wp->vars.val_ss.slide_mode = (tm_slide_mode)WAVE_VAL_SLIDESTR_MODE;
-    wp->vars.max_val_ss.slide_mode = (tm_slide_mode)WAVE_VAL_SLIDESTR_MODE;
-    wp->vars.min_val_ss.slide_mode = (tm_slide_mode)WAVE_VAL_SLIDESTR_MODE;
-    wp->vars.mid_val_ss.slide_mode = (tm_slide_mode)WAVE_VAL_SLIDESTR_MODE;
+    wp->vars.title_ss.slide_mode = ui->params.slide_mode;
+    wp->vars.val_ss.slide_mode = ui->params.slide_mode;
+    wp->vars.max_val_ss.slide_mode = ui->params.slide_mode;
+    wp->vars.min_val_ss.slide_mode = ui->params.slide_mode;
+    wp->vars.mid_val_ss.slide_mode = ui->params.slide_mode;
     wp->vars.title_ss.canvas.fb = &ui->fb;
     wp->vars.val_ss.canvas.fb = &ui->fb;
     wp->vars.max_val_ss.canvas.fb = &ui->fb;

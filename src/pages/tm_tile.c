@@ -17,6 +17,7 @@ static int16_t box_top(const tm_tile_page* t) { return (t->page.ui->fb.h - block
 // Left edge of the box of an item whose icon would start at icon_x.
 #define BOX_X(icon_x) ((icon_x) - TILE_ICON_IND_L)
 // Room for a name: up to the neighbours' names, or the screen when only the selected has one.
+// Rooms never overlap, so a long name is cut (or scrolls when selected).
 #define NAME_W(t) ((t)->name_mode == TM_ICON_NAME_ALL ? (t)->vars.pitch - 2 : (t)->page.ui->fb.w)
 // The selected item's name scrolls when it does not fit; the others are cut.
 #define NAME_SS(t, i) ((i) == (t)->select_item ? &(t)->name_ss : NULL)
@@ -26,11 +27,7 @@ static int16_t box_top(const tm_tile_page* t) { return (t->page.ui->fb.h - block
 //--------Title相关基本方法
 void tm_tile_page_in_init(tm_page_addr page_addr) {
     tm_tile_page* self = (tm_tile_page*)page_addr;
-    self->vars.pitch = DEFAULT_TILE_ICON_S + self->icon_w;
-    if (self->name_mode == TM_ICON_NAME_ALL) // 名称不与相邻的名称重叠
-        for (uint8_t i = 0; i < self->item_num; i++)
-            self->vars.pitch = MAX(self->vars.pitch,
-                                   (int16_t)tm_text_width(self->option_array[i].text, DEFAULT_LIST_TEXT_FONT) + 4);
+    self->vars.pitch = DEFAULT_TILE_ICON_S + self->icon_w; // 固定间距，放不下的名称截断或滚动
     self->vars.iconX.pos_cur = 0;
     self->vars.iconX.pos_tgt = TILE_ICON_S;
     self->vars.iconY.pos_cur = -(self->icon_h / 2) - TILE_ICON_IND_U; // 选中框上沿

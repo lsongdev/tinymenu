@@ -79,16 +79,6 @@ enum tm_loop_kind // 循环模式类别(数组中的下标)
     TM_LOOP_LIST_POPUP,    // 列表弹窗循环开关
     TM_LOOP_COUNT,     // 循环模式类别数目
 };
-enum tm_slide_step_kind {
-    TM_SLIDE_STEP_TILE = 0x00, // 磁贴文本滚动步长
-    TM_SLIDE_STEP_LIST_TEXT,   // 列表文本滚动步长
-    TM_SLIDE_STEP_LIST_VALUE,    // 列表值滚动步长
-    TM_SLIDE_STEP_WAVE_TEXT,   // 波形页面文本滚动步长
-    TM_SLIDE_STEP_WAVE_VALUE,    // 波形页面数值滚动步长
-    TM_SLIDE_STEP_POPUP_TEXT,     // 弹窗内文本的滚动步长
-    TM_SLIDE_STEP_POPUP_VALUE,     // 弹窗内数值的滚动步长
-    TM_SLIDE_STEP_COUNT,
-};
 enum tm_popup_blur_kind {
     TM_POPUP_BLUR_MSG = 0x00, // msgwin背景模糊程度下标
     TM_POPUP_BLUR_CONFIRM,       // msgwin背景模糊程度下标
@@ -131,8 +121,7 @@ typedef struct tm_ui_params {
     uint16_t ani_param[TM_ANI_COUNT];              // 动画参数数组
     uint8_t ufd_param[TM_UNFOLD_COUNT];               // 展开参数数组
     uint8_t loop_param[TM_LOOP_COUNT];             // 循环参数数组
-    uint8_t slidestrstep_param[TM_SLIDE_STEP_COUNT];      // 文本滚动步长参数数组
-    tm_slide_mode slidestrmode_param[TM_SLIDE_STEP_COUNT]; // 文本滚动步长参数数组
+    tm_slide_mode slide_mode;                      // 放不下的文本怎样滚动(所有页面统一)
     tm_blur winbgblur_param[TM_POPUP_BLUR_COUNT];     // 背景模糊参数的数组
 } tm_ui_params;                                         // UI参数集合类型
 // Defaults copied into every UI by tm_ui_init(); change ui->params afterwards to tune one UI.

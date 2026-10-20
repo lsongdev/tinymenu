@@ -146,14 +146,10 @@ void tm_value_popup_in_init(tm_page_addr page_addr) {
         if (NULL == self->text)
             self->text = TM_POPUP_TEXT_DEFAULT;
     }
-    self->vars.text_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_POPUP_TEXT];
-    self->vars.val_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_POPUP_VALUE];
-    self->vars.min_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_POPUP_VALUE];
-    self->vars.max_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_POPUP_VALUE];
-    self->vars.text_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_POPUP_TEXT];
-    self->vars.val_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_POPUP_VALUE];
-    self->vars.min_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_POPUP_VALUE];
-    self->vars.max_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_POPUP_VALUE];
+    self->vars.text_ss.slide_mode = ui->params.slide_mode;
+    self->vars.val_ss.slide_mode = ui->params.slide_mode;
+    self->vars.min_ss.slide_mode = ui->params.slide_mode;
+    self->vars.max_ss.slide_mode = ui->params.slide_mode;
     tm_slide_str_reset(&(self->vars.text_ss));
     tm_slide_str_reset(&(self->vars.val_ss));
     tm_slide_str_reset(&(self->vars.min_ss));
@@ -277,10 +273,10 @@ void tm_value_popup_init(tm_value_popup* vw,
     vw->page.page_type = TM_PAGE_VALUE_POPUP;
     tm_page_init(vw, ui, cb);
     memset(&vw->vars, 0, sizeof(vw->vars));
-    vw->vars.text_ss.slide_mode = (tm_slide_mode)DEFAULT_CONF_BTN_SLIDESTR_MODE;
-    vw->vars.val_ss.slide_mode = (tm_slide_mode)DEFAULT_CONF_BTN_SLIDESTR_MODE;
-    vw->vars.min_ss.slide_mode = (tm_slide_mode)DEFAULT_CONF_BTN_SLIDESTR_MODE;
-    vw->vars.max_ss.slide_mode = (tm_slide_mode)DEFAULT_CONF_BTN_SLIDESTR_MODE;
+    vw->vars.text_ss.slide_mode = ui->params.slide_mode;
+    vw->vars.val_ss.slide_mode = ui->params.slide_mode;
+    vw->vars.min_ss.slide_mode = ui->params.slide_mode;
+    vw->vars.max_ss.slide_mode = ui->params.slide_mode;
     vw->vars.text_ss.canvas.fb = &ui->fb;
     vw->vars.val_ss.canvas.fb = &ui->fb;
     vw->vars.min_ss.canvas.fb = &ui->fb;

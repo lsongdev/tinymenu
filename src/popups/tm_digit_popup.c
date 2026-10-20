@@ -36,8 +36,6 @@
 #define DIGIT_WIN_NUM_Y_OFS                                                                         \
     (DIGIT_WIN_MMVAL_Y_OFS + GET_FNOT_H(DIGIT_WIN_NUM_FONT) +                                        \
      DEFAULT_DIGIT_WIN_V_S) // 最大最小值y坐标相对边框的偏移
-#define DIGIT_WIN_SLI_TXT_MODE DEFAULT_DIGIT_WIN_SLI_TXT_MODE // 文本的滑动模式
-#define DIGIT_WIN_SLI_VAL_MODE DEFAULT_DIGIT_WIN_SLI_VAL_MODE // 数值的滑动模式
 #define DIGIT_WIN_MACRO_ASSERT(ui)                                                                      \
     (DIGIT_WIN_H > (ui)->fb.h ||                                                            \
      (9 * GET_FNOT_W(DIGIT_WIN_NUM_FONT) + 6 * (DIGIT_WIN_NUM_S) > DIGIT_WIN_W(ui)))
@@ -157,12 +155,9 @@ void tm_digit_popup_in_init(tm_page_addr page_addr) {
         self->vars.num_w_temp =
             9 * GET_FNOT_W(DIGIT_WIN_NUM_FONT) + 6 * (DIGIT_WIN_NUM_S); //.和数字之间不需要边距
     self->editing = false; // 一开始进入默认什么都没有选中
-    self->vars.text_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_POPUP_TEXT];
-    self->vars.min_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_POPUP_VALUE];
-    self->vars.max_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_POPUP_VALUE];
-    self->vars.text_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_POPUP_TEXT];
-    self->vars.min_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_POPUP_VALUE];
-    self->vars.max_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_POPUP_VALUE];
+    self->vars.text_ss.slide_mode = ui->params.slide_mode;
+    self->vars.min_ss.slide_mode = ui->params.slide_mode;
+    self->vars.max_ss.slide_mode = ui->params.slide_mode;
     tm_slide_str_reset(&(self->vars.text_ss));
     tm_slide_str_reset(&(self->vars.min_ss));
     tm_slide_str_reset(&(self->vars.max_ss));
@@ -309,9 +304,9 @@ void tm_digit_popup_init(
     spw->page.page_type = TM_PAGE_DIGIT_POPUP;
     tm_page_init(spw, ui, cb);
     memset(&spw->vars, 0, sizeof(spw->vars));
-    spw->vars.text_ss.slide_mode = (tm_slide_mode)DIGIT_WIN_SLI_TXT_MODE;
-    spw->vars.min_ss.slide_mode = (tm_slide_mode)DIGIT_WIN_SLI_VAL_MODE;
-    spw->vars.max_ss.slide_mode = (tm_slide_mode)DIGIT_WIN_SLI_VAL_MODE;
+    spw->vars.text_ss.slide_mode = ui->params.slide_mode;
+    spw->vars.min_ss.slide_mode = ui->params.slide_mode;
+    spw->vars.max_ss.slide_mode = ui->params.slide_mode;
     spw->vars.text_ss.canvas.fb = &ui->fb;
     spw->vars.min_ss.canvas.fb = &ui->fb;
     spw->vars.max_ss.canvas.fb = &ui->fb;

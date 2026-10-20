@@ -115,10 +115,12 @@ popup now lowers on `down`, so send `next`/`prev` instead.
 A choice list popup can open on the current value with
 `tm_list_popup_select()`. Message and confirm popups wrap between words.
 
-Text that does not fit scrolls while it is selected. `TM_SLIDE_ONCE` (the
-default, in `ui.params.slidestrmode_param`) scrolls to the end, pauses and
-returns to the start, after which the UI goes idle; `TM_SLIDE_LOOP` scrolls
-round continuously; `TM_SLIDE_OFF` shows the start only.
+Text that does not fit is cut, and scrolls while it is selected: list rows,
+icon names under tiles and grids, popup texts and wave labels alike, all at
+the same speed. One setting, `ui.params.slide_mode`, picks how for the whole
+UI: `TM_SLIDE_ONCE` (the default) scrolls to the end, pauses and returns to
+the start, after which the UI goes idle; `TM_SLIDE_LOOP` scrolls round
+continuously; `TM_SLIDE_OFF` shows the start only.
 
 ### Text input
 

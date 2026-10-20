@@ -16,7 +16,6 @@
 #define CONF_TEXT_BTN_S DEFAULT_CONF_WIN_TEXT_BTN_S // 文本和按键的竖直间距
 #define CONF_BTN_MAX_W(ui)                                                                             \
     (((ui)->fb.w / 2) - CONF_WIN_HORIZON_S(ui) - 2 * DEFAULT_CONF_WIN_FONT_MARGIN) // 按键文本的最大宽度
-#define CONF_BTN_SLIDESTR_MODE DEFAULT_CONF_BTN_SLIDESTR_MODE // 按键文本的移动模式
 
 //-----ConfWin相关方法和函数
 
@@ -117,8 +116,7 @@ void tm_confirm_popup_in_init(tm_page_addr page_addr) {
           2 * CONF_WIN_FONT_MARGIN - CONF_TEXT_BTN_S) >>
          1);
     self->vars.win_y.pos_cur = -self->vars.win_y.pos_tgt;
-    self->vars.btn_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_POPUP_TEXT];
-    self->vars.btn_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_POPUP_TEXT];
+    self->vars.btn_ss.slide_mode = ui->params.slide_mode;
     tm_slide_str_reset(&(self->vars.btn_ss));
     ui->win_bg_blur = ui->params.winbgblur_param[TM_POPUP_BLUR_CONFIRM];
 }
@@ -231,7 +229,7 @@ void tm_confirm_popup_init(tm_confirm_popup* cw,
     cw->page.page_type = TM_PAGE_CONFIRM_POPUP;
     tm_page_init(cw, ui, cb);
     memset(&cw->vars, 0, sizeof(cw->vars));
-    cw->vars.btn_ss.slide_mode = (tm_slide_mode)CONF_BTN_SLIDESTR_MODE;
+    cw->vars.btn_ss.slide_mode = ui->params.slide_mode;
     cw->vars.canvas.fb = &ui->fb;
     cw->vars.btn_ss.canvas.fb = &ui->fb;
     cw->auto_get_bg_opt = auto_get_bg_opt;

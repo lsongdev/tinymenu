@@ -109,7 +109,7 @@ void tm_slide_str_draw(tm_slide_str* ss, int16_t y, tm_font font, uint16_t elaps
                 ss->slide_is_finish = true;
                 break;
             }
-            ss->str_start_x -= ss->step;
+            ss->str_start_x -= TM_SLIDE_STEP;
             if (ss->slide_mode == TM_SLIDE_LOOP) {
                 const int16_t period = (int16_t)(text_w + TM_SLIDE_LOOP_GAP * font.Width);
                 if (ss->str_start_x <= -period) { // 下一份已经到了开头，回到一圈的起点

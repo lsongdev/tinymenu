@@ -31,33 +31,36 @@ void tm_icon_item_draw(tm_canvas* c, int16_t x, int16_t y, const tm_option* opti
     const int16_t name_y = y + tm_icon_item_h(icon_h, false) + NAME_S; // 在图标的选中框下面
     if (name_y < 0 || name_y + GET_FNOT_H(NAME_FONT) > c->h)
         return; // 名称只在完整可见时绘制
-    // The name's room: name_w centred under the icon, kept inside the canvas, so
-    // neighbouring names never share a pixel.
+    // The name's room: name_w centred under the icon, so neighbouring names never
+    // share a pixel. The name moves with its icon; the canvas only cuts it.
     const int16_t box_w = tm_icon_item_w(icon_w);
-    const int16_t room = MAX(name_w, box_w), centre = c->start_x + x + box_w / 2;
-    const int16_t left = MAX(centre - room / 2, c->start_x);
-    const int16_t right = MIN(centre - room / 2 + room, c->start_x + c->w);
+    const int16_t room = name_w, centre = c->start_x + x + box_w / 2;
+    const int16_t room_l = centre - room / 2;
+    const int16_t left = MAX(room_l, c->start_x), right = MIN(room_l + room, c->start_x + c->w);
     if (right <= left)
         return;
     const int16_t text_w = (int16_t)tm_text_width(name, NAME_FONT);
     tm_canvas n = {.fb = c->fb, .start_x = left, .start_y = c->start_y + name_y, .w = right - left,
                    .h = GET_FNOT_H(NAME_FONT)};
-    if (text_w <= n.w) { // 放得下：居中，靠边时往里收
-        const int16_t tx = MAX(MIN(centre - text_w / 2, right - text_w), left);
+    // 图标完整可见时，名称只能用画布里的部分；滑出边缘的图标，名称跟着一起滑出去
+    const bool whole = x >= 0 && x + box_w <= c->w;
+    if (text_w <= (whole ? n.w : room)) { // 放得下：居中
+        int16_t tx = centre - text_w / 2;
+        if (whole)
+            tx = MAX(MIN(tx, right - text_w), left);
         tm_canvas_draw_str(&n, tx - left, 0, NAME_FONT, name);
-    } else if (slide) { // 选中项放不下：和列表一样滚动
+    } else if (slide && whole) { // 选中项放不下：和列表一样滚动
         slide->canvas = n;
         slide->str = name;
         tm_slide_str_draw(slide, 0, NAME_FONT, elapsed_ms);
     } else { // 其他项放不下：从开头截断
-        tm_canvas_draw_str(&n, 0, 0, NAME_FONT, name);
+        tm_canvas_draw_str(&n, room_l - left, 0, NAME_FONT, name);
     }
 }
 
 void tm_icon_menu_name_reset(tm_icon_menu* m) {
     const tm_ui* ui = m->page.ui;
-    m->name_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_TILE];
-    m->name_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_TILE];
+    m->name_ss.slide_mode = ui->params.slide_mode;
     m->name_ss.str = NULL; // 还没画过：滚动前先画一次，确定它的画布
     tm_slide_str_reset(&m->name_ss);
 }

@@ -33,7 +33,6 @@
 #define DEFAULT_TILE_ICON_IND_SL 5           // 磁贴指示器边长SideLength
 #define DEFAULT_TILE_ICON_S 6                // 磁贴图标间距(图标边和边的距离)
 #define DEFAULT_TILE_TITLE_S 4               // 图标指示器下沿到标题的间距
-#define DEFAULT_TILE_SLIDESTR_MODE TM_SLIDE_ONCE         // 磁贴标题文本的滚动模式
 //------------------与list页面相关的默认参数
 #define DEFAULT_LIST_TEXT_FONT Font_6_8  // 列表文字的字体
 #define DEFAULT_LIST_TEXT_U_S 3          // 列表文字的上边距
@@ -48,8 +47,6 @@
 #define DEFAULT_LIST_CHECK_BOX_D_S 1     // 列表确认选择框内点到宽的边距
 #define DEFAULT_LIST_TEXT_LEN_PER_MAX 62 // 这个是百分占比即列表文字最大长度占宽度的比例
 #define DEFAULT_LIST_VAL_BUFF_SIZE 16    // 列表值文本缓冲区的大小
-#define DEFAULT_LIST_TXT_SLIDESTR_MODE TM_SLIDE_ONCE // list文本的滚动模式
-#define DEFAULT_LIST_VAL_SLIDESTR_MODE TM_SLIDE_ONCE // list数值文本的滚动模式
 //------------------与Wave页面相关的默认参数
 #define DEFAULT_WAVE_FONT Font_6_8         // 波形字体
 #define DEFAULT_WAVE_Y_AXIS_LABEL_WIDTH 20 // y轴标签的宽度
@@ -61,8 +58,6 @@
 #define DEFAULT_WAVE_D_TXT_VAL_S 3         // 底部文本和数值和显示标志的间隔
 #define DEFAULT_WAVE_TEXT_D_S 1            // 文本行到底边的边距
 #define DEFAULT_WAVE_TEXT_W 60             // 文本行的宽度
-#define DEFAULT_WAVE_TXT_SLIDESTR_MODE TM_SLIDE_ONCE                        // WAVE文本的滚动模式
-#define DEFAULT_WAVE_VAL_SLIDESTR_MODE TM_SLIDE_ONCE                        // WAVE数值文本的滚动模式
 
 //---------------与MsgWin页面相关的默认参数
 #define DEFAULT_MSG_WIN_FONT Font_6_8 // Msg弹窗字体
@@ -80,7 +75,6 @@
 #define DEFAULT_CONF_WIN_IND_BTN_S 2     // 按键内文本和指示器的竖直间距
 #define DEFAULT_CONF_WIN_BTN_R 2         // 按键倒角
 #define DEFAULT_CONF_WIN_TEXT_BTN_S 2    // 文本和按键的竖直间距
-#define DEFAULT_CONF_BTN_SLIDESTR_MODE TM_SLIDE_ONCE // WAVE文本的滚动模式
 
 //--------------与ValWin页面相关的默认参数
 #define DEFAULT_VAL_WIN_FONT Font_6_8    // Val弹窗字体
@@ -109,8 +103,6 @@
 #define DEFAULT_DIGIT_WIN_BOX_H 3            // Digit弹窗的指示器高度
 #define DEFAULT_DIGIT_WIN_R 2                // Digit弹窗的倒角大小
 #define DEFAULT_DIGIT_WIN_MMVAL_S 1          // Digit弹窗的最小最大值间距
-#define DEFAULT_DIGIT_WIN_SLI_TXT_MODE TM_SLIDE_ONCE     // Digit弹窗文本的滚动模式
-#define DEFAULT_DIGIT_WIN_SLI_VAL_MODE TM_SLIDE_ONCE     // Digit弹窗数值文本的滚动模式
 
 //---------------与ListWin页面相关的默认参数
 #define DEFAULT_LIST_WIN_FONT Font_6_8 // 弹窗字体

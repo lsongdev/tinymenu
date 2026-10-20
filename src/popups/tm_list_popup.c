@@ -97,8 +97,7 @@ void tm_list_popup_in_init(tm_page_addr page_addr) {
     self->vars.line_h = (uint8_t)MAX(LIST_WIN_TEXT_LINE_H,
                                      self->icon_h ? self->icon_h + 2 * LIST_WIN_ICON_PAD : 0);
     self->vars.line_n = MAX((ui)->fb.h / self->vars.line_h, 1);
-    self->vars.str_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_POPUP_TEXT];
-    self->vars.str_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_POPUP_TEXT];
+    self->vars.str_ss.slide_mode = ui->params.slide_mode;
     tm_slide_str_reset(&(self->vars.str_ss));
     ui->win_bg_blur = ui->params.winbgblur_param[TM_POPUP_BLUR_LIST];
 }
@@ -222,7 +221,7 @@ void tm_list_popup_init(tm_list_popup* lw, tm_ui* ui, uint8_t item_num, tm_optio
     lw->page.page_type = TM_PAGE_LIST_POPUP;
     tm_page_init((tm_page_addr)lw, ui, cb);
     memset(&lw->vars, 0, sizeof(lw->vars));
-    lw->vars.str_ss.slide_mode = (tm_slide_mode)TM_SLIDE_ONCE;
+    lw->vars.str_ss.slide_mode = ui->params.slide_mode;
     lw->vars.str_ss.canvas.fb = &ui->fb;
     lw->item_num = item_num;
     lw->option_array = option_array;

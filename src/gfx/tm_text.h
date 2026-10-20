@@ -21,7 +21,6 @@ typedef struct {
     uint8_t slide_is_finish : 1;  // 单次滚动是否结束标志位
     uint8_t at_tail : 1;          // TM_SLIDE_ONCE 已滚到末尾，停顿后回到开头
     tm_slide_mode slide_mode : 2; // 滚动模式
-    uint8_t step;                 // 每个 tick 移动的像素
     uint8_t start_delay;          // 开始滚动前等待的 tick 数
     uint16_t elapsed_ms;          // 未满一个 tick 的时间
     int16_t str_start_x;          // 用于滚动时记录字符串的起始位置
@@ -41,6 +40,8 @@ void tm_canvas_draw_wrapped(tm_canvas* canvas, int16_t x, int16_t y, tm_font fon
 
 // Scrolling advances one tick per TM_SLIDE_TICK_MS of elapsed time.
 #define TM_SLIDE_TICK_MS 10
+// Pixels moved per tick: every scrolling text in the UI goes at the same speed.
+#define TM_SLIDE_STEP 1
 
 // Draws the text, then advances its scroll position by `elapsed_ms`.
 void tm_slide_str_draw(tm_slide_str* ss, int16_t y, tm_font font, uint16_t elapsed_ms);

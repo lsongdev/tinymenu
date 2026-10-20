@@ -47,26 +47,7 @@ const tm_ui_params tm_default_params = {
             [TM_LOOP_LIST] = true,     // 菜单列表循环模式开关
             [TM_LOOP_LIST_POPUP] = true, // 菜单弹窗循环模式开关
         },
-    .slidestrstep_param =
-        {
-            [TM_SLIDE_STEP_TILE] = 2,      // 磁贴字符串滚动步进
-            [TM_SLIDE_STEP_LIST_TEXT] = 1, // 列表文本滚动步进
-            [TM_SLIDE_STEP_LIST_VALUE] = 1,  // 列表数值滚动步进
-            [TM_SLIDE_STEP_WAVE_TEXT] = 1, // 波形文本滚动步进
-            [TM_SLIDE_STEP_WAVE_VALUE] = 1,  // 波形数值滚动步进
-            [TM_SLIDE_STEP_POPUP_TEXT] = 1,   // 弹窗文本滚动步进
-            [TM_SLIDE_STEP_POPUP_VALUE] = 1,   // 弹窗数值滚动步进
-        },
-    .slidestrmode_param =
-        {
-            [TM_SLIDE_STEP_TILE] = TM_SLIDE_ONCE,      // 磁贴字符串滚动模式
-            [TM_SLIDE_STEP_LIST_TEXT] = TM_SLIDE_ONCE, // 列表文本滚动模式
-            [TM_SLIDE_STEP_LIST_VALUE] = TM_SLIDE_ONCE,  // 列表数值滚动模式
-            [TM_SLIDE_STEP_WAVE_TEXT] = TM_SLIDE_ONCE, // 波形文本滚动模式
-            [TM_SLIDE_STEP_WAVE_VALUE] = TM_SLIDE_ONCE,  // 波形数值滚动模式
-            [TM_SLIDE_STEP_POPUP_TEXT] = TM_SLIDE_ONCE,   // 弹窗文本滚动模式
-            [TM_SLIDE_STEP_POPUP_VALUE] = TM_SLIDE_ONCE,   // 弹窗数值滚动模式
-        },
+    .slide_mode = TM_SLIDE_ONCE, // 滚到末尾，停一下，回到开头后停止
     .winbgblur_param =
         {
             [TM_POPUP_BLUR_MSG] = (tm_blur)2,  // 消息弹窗背景模糊程度

@@ -13,7 +13,7 @@ extern "C" {
 struct tm_tile_page_vars { // 因为Title选中项一直在中间，所以不需要有每个页面变量记录它真实页面的偏移位置
     tm_anim iconX;    // 图标的x坐标距选中目标的间距的变量
     tm_anim iconY;    // 图标的y坐标
-    int16_t pitch;         // 相邻两项中心的距离(显示名称时按最长的名称加宽)
+    int16_t pitch;         // 相邻两项中心的距离(固定，不随名称加宽)
 };
 // The first fields are tm_icon_menu's, in the same order as in tm_grid_page.
 typedef struct tm_tile_page { // 磁贴页面

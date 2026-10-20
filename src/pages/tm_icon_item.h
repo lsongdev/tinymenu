@@ -22,7 +22,7 @@ typedef const uint8_t tm_icon[ICON_BUFFSIZE]; // 图标：页优先的位图，�
 int16_t tm_icon_item_w(uint8_t icon_w);
 int16_t tm_icon_item_h(uint8_t icon_h, bool name);
 /* Draws the item whose box has its top left at (x, y) on canvas c. The name has
- * name_w centred on the box (kept on the canvas): one that fits is centred in it,
+ * name_w centred on the box, moving with it (the canvas cuts it): one that fits is centred in it,
  * a longer one is cut, or scrolls with `slide` (the selected item's; NULL for the
  * others) advanced by elapsed_ms, as a list scrolls its selected row. */
 void tm_icon_item_draw(tm_canvas* c, int16_t x, int16_t y, const tm_option* option, uint8_t icon_w,

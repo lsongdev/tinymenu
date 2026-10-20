@@ -37,8 +37,6 @@
 #define CHECK_BOX_R DEFAULT_LIST_CHECK_BOX_R     // 列表确认选择框倒角
 #define SWITCH_W (CHECK_BOX_F_H * 2 - 2)         // 开关样式的宽度(高度与选择框相同)
 #define CHECK_BOX_D_R DEFAULT_LIST_CHECK_BOX_D_R // 列表确认选择框内点的倒角
-#define LIST_TXT_SLIDESTR_MODE DEFAULT_LIST_TXT_SLIDESTR_MODE // 磁贴标题文本的滚动模式
-#define LIST_VAL_SLIDESTR_MODE DEFAULT_LIST_VAL_SLIDESTR_MODE // 磁贴标题文本的滚动模式
 #define LIST_MACRO_ASSERT(ui)                                                                          \
     ((CHECK_BOX_R * 2 > CHECK_BOX_F_W) || (CHECK_BOX_D_R * 2 > CHECK_BOX_D_W) ||                   \
      (LIST_VAL_MAX_LEN(ui) < CHECK_BOX_F_W))
@@ -193,10 +191,8 @@ void tm_list_page_in_init(tm_page_addr page_addr) {
     self->vars.optInt.pos_tgt = self->line_h;
     ui->scrollBar.display = true;
     // step其实可以移到init中，因为这个值在整个状态机中基本是是不变的
-    self->vars.opt_text_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_LIST_TEXT];
-    self->vars.opt_val_ss.slide_mode = ui->params.slidestrmode_param[TM_SLIDE_STEP_LIST_TEXT];
-    self->vars.opt_text_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_LIST_TEXT];
-    self->vars.opt_val_ss.step = ui->params.slidestrstep_param[TM_SLIDE_STEP_LIST_VALUE];
+    self->vars.opt_text_ss.slide_mode = ui->params.slide_mode;
+    self->vars.opt_val_ss.slide_mode = ui->params.slide_mode;
     tm_slide_str_reset(&(self->vars.opt_text_ss));
     tm_slide_str_reset(&(self->vars.opt_val_ss));
     self->vars.cascade_ms = 0;
@@ -412,8 +408,8 @@ void tm_list_page_init(
     lp->page.methods = &tm_list_page_methods;
     tm_page_init((tm_page_addr)lp, ui, call_back);
     memset(&lp->vars, 0, sizeof(lp->vars));
-    lp->vars.opt_text_ss.slide_mode = (tm_slide_mode)LIST_TXT_SLIDESTR_MODE;
-    lp->vars.opt_val_ss.slide_mode = (tm_slide_mode)LIST_VAL_SLIDESTR_MODE;
+    lp->vars.opt_text_ss.slide_mode = ui->params.slide_mode;
+    lp->vars.opt_val_ss.slide_mode = ui->params.slide_mode;
     lp->vars.opt_text_ss.canvas.fb = &ui->fb;
     lp->vars.opt_val_ss.canvas.fb = &ui->fb;
     lp->mode = mode;

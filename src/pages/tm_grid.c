@@ -92,7 +92,7 @@ static void draw(tm_grid_page* g) {
             continue;
         tm_icon_item_draw(&c, box_x(g, i), y, &g->option_array[i], g->icon_w, g->icon_h,
                           tm_icon_menu_shows_name((tm_icon_menu*)g, i),
-                          g->name_mode == TM_ICON_NAME_ALL ? cell_w(g) : area_w(ui),
+                          g->name_mode == TM_ICON_NAME_ALL ? cell_w(g) - GRID_GAP : area_w(ui),
                           i == g->select_item ? &g->name_ss : NULL, ui->time);
     }
     // Scroll bar, only when there is more than fits.

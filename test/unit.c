@@ -730,6 +730,33 @@ static void test_icon_name_slide(void) {
     CHECK(min_x < 0 && ui.is_motionless);
 }
 
+/* A name moves with its icon: half off the canvas, its end shows at the edge
+ * where it slid off, not its start pulled back in. */
+static void test_icon_name_follows(void) {
+    enum { W = 64, H = 64 };
+    uint8_t bits[W * H / 8], want_bits[W * H / 8];
+    tm_fb fb, want;
+    tm_fb_init(&fb, bits, W, H);
+    tm_fb_init(&want, want_bits, W, H);
+    tm_fb_set_color(&fb, 1);
+    tm_fb_set_color(&want, 1);
+    tm_canvas c = {&fb, 0, 0, W, H};
+    const char* names[] = {"Sound", "Settings"};
+    const int name_y = tm_icon_item_h(30, false) + 1, name_h = DEFAULT_LIST_TEXT_FONT.Height;
+    for (int k = 0; k < 2; k++) {
+        tm_option o = {.text = names[k]};
+        tm_fb_clear(&fb); // box from -24 to 12, centred at -6; room 34: -23 .. 11
+        tm_icon_item_draw(&c, -24, 0, &o, 30, 30, true, 34, NULL, 0);
+        const int text_w = (int)tm_text_width(names[k], DEFAULT_LIST_TEXT_FONT);
+        const int tx = text_w <= 34 ? -6 - text_w / 2 : -23; // centred, or cut from the room's start
+        tm_fb_clear(&want);
+        tm_canvas room = {&want, 0, name_y, 11, name_h};
+        tm_canvas_draw_str(&room, tx, 0, DEFAULT_LIST_TEXT_FONT, names[k]);
+        for (int y = name_y; y < name_y + name_h; y++)
+            for (int x = 0; x < W; x++) CHECK(lit(&fb, x, y) == lit(&want, x, y));
+    }
+}
+
 int main(void)
 {
     test_expand16();
@@ -744,6 +771,7 @@ int main(void)
     test_grid();
     test_grid_centred();
     test_icon_name_slide();
+    test_icon_name_follows();
     test_presets();
     test_menu_page();
     test_list_popup();
