@@ -728,6 +728,17 @@ static void test_icon_name_slide(void) {
         if (ui.current_page == (tm_page*)&t && t.name_ss.str_start_x < min_x) min_x = t.name_ss.str_start_x;
     }
     CHECK(min_x < 0 && ui.is_motionless);
+    // Every focus scrolls it again: away and back with keys, as on a device.
+    for (int round = 0; round < 2; round++) {
+        tm_ui_send(&ui, TM_MSG_RIGHT);
+        for (i = 0; i < 300; i++) tm_ui_proc(&ui, 10);
+        tm_ui_send(&ui, TM_MSG_LEFT);
+        for (min_x = 0, i = 0; i < 3000; i++) {
+            tm_ui_proc(&ui, 10);
+            if (t.select_item == 0 && t.name_ss.str_start_x < min_x) min_x = t.name_ss.str_start_x;
+        }
+        CHECK(t.select_item == 0 && min_x < 0 && ui.is_motionless);
+    }
 }
 
 /* A name moves with its icon: half off the canvas, its end shows at the edge

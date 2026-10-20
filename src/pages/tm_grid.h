@@ -24,6 +24,7 @@ typedef struct tm_grid_page {
     uint8_t icon_w, icon_h;      /* size of the options' icons (default 30x30) */
     tm_icon_name_mode name_mode; /* names under the icons (default all) */
     tm_slide_str name_ss;        /* the selected name, scrolling when it does not fit */
+    uint8_t name_item;           /* the item name_ss belongs to */
     uint8_t cols;   /* columns asked for (0: TM_GRID_COLS_DEFAULT); see tm_grid_page_cols */
     tm_anim scroll; /* pixels the grid is scrolled down by */
 } tm_grid_page;

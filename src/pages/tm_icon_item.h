@@ -47,13 +47,18 @@ typedef struct tm_icon_menu {
     uint8_t icon_w, icon_h;      /* size of the options' icons (default 30x30) */
     tm_icon_name_mode name_mode; /* which icons have their name under them */
     tm_slide_str name_ss;        /* the selected item's name, when it scrolls */
+    uint8_t name_item;           /* the item name_ss scrolls; another one selected starts it over */
 } tm_icon_menu;
 
 /* Sets the items of a tile or grid page (after tm_page_init), numbers them and
  * gives the page the default icon size and every name. */
 void tm_icon_menu_set_items(tm_icon_menu* menu, uint8_t item_num, tm_option* option_array);
-/* Starts the selected name over: from its beginning, scrolling once the page is still. */
+/* Starts the selected name over: from its beginning, scrolling once the page is still.
+ * Entering the page calls it; a new selection starts over by itself. */
 void tm_icon_menu_name_reset(tm_icon_menu* menu);
+/* The scrolling state to draw item i's name with: the selected item's (started
+ * over when the selection has moved since), NULL for the others. */
+tm_slide_str* tm_icon_menu_name_slide(tm_icon_menu* menu, uint8_t i);
 /* After drawing the items: lets the selected name scroll once the other
  * animations have finished, and keeps the UI awake while it does. */
 void tm_icon_menu_name_step(tm_icon_menu* menu);

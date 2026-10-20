@@ -62,7 +62,16 @@ void tm_icon_menu_name_reset(tm_icon_menu* m) {
     const tm_ui* ui = m->page.ui;
     m->name_ss.slide_mode = ui->params.slide_mode;
     m->name_ss.str = NULL; // 还没画过：滚动前先画一次，确定它的画布
+    m->name_item = m->select_item;
     tm_slide_str_reset(&m->name_ss);
+}
+
+tm_slide_str* tm_icon_menu_name_slide(tm_icon_menu* m, uint8_t i) {
+    if (i != m->select_item)
+        return NULL;
+    if (m->name_item != m->select_item) // 不管怎样换的选中项，每次聚焦都从头滚动
+        tm_icon_menu_name_reset(m);
+    return &m->name_ss;
 }
 
 void tm_icon_menu_name_step(tm_icon_menu* m) {

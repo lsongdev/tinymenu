@@ -31,7 +31,7 @@
 #define DEFAULT_TILE_ICON_IND_L 3            // 磁贴指示器与磁贴的左边距
 #define DEFAULT_TILE_ICON_IND_R 3            // 磁贴指示器与磁贴的右边距
 #define DEFAULT_TILE_ICON_IND_SL 5           // 磁贴指示器边长SideLength
-#define DEFAULT_TILE_ICON_S 6                // 磁贴图标间距(图标边和边的距离)
+#define DEFAULT_TILE_ICON_S 14               // 磁贴图标间距(图标边和边的距离)
 #define DEFAULT_TILE_TITLE_S 4               // 图标指示器下沿到标题的间距
 //------------------与list页面相关的默认参数
 #define DEFAULT_LIST_TEXT_FONT Font_6_8  // 列表文字的字体

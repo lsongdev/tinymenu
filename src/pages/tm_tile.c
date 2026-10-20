@@ -20,7 +20,7 @@ static int16_t box_top(const tm_tile_page* t) { return (t->page.ui->fb.h - block
 // Rooms never overlap, so a long name is cut (or scrolls when selected).
 #define NAME_W(t) ((t)->name_mode == TM_ICON_NAME_ALL ? (t)->vars.pitch - 2 : (t)->page.ui->fb.w)
 // The selected item's name scrolls when it does not fit; the others are cut.
-#define NAME_SS(t, i) ((i) == (t)->select_item ? &(t)->name_ss : NULL)
+#define NAME_SS(t, i) tm_icon_menu_name_slide((tm_icon_menu*)(t), (i))
 #define TILE_ICON_S (self->vars.pitch) // 图标间距(中心到中心)
 
 //**********************每个以Page为基类的类都有对应的AnimInit、show、React方法
@@ -195,10 +195,7 @@ bool tm_tile_page_move(tm_tile_page* tp, int16_t delta) {
     const uint8_t from = tp->select_item;
     for (; delta < 0; delta++) tile_prev(tp);
     for (; delta > 0; delta--) tile_next(tp);
-    if (tp->select_item == from)
-        return false;
-    tm_icon_menu_name_reset((tm_icon_menu*)tp);
-    return true;
+    return tp->select_item != from;
 }
 
 void tm_tile_page_select(tm_tile_page* tp, uint8_t index) {
