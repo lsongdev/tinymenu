@@ -14,14 +14,21 @@
 #define KEY_MIN_W 10
 #define MAX_COLS 10
 
-/* The built-in pages: letters with digits in both cases, then symbols. */
-static const char* const PAGES[] = {
-    "abcdefghijklmnopqrstuvwxyz0123456789-_.@",
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.@",
+/* The built-in pages, each a group of its own. */
+enum { PAGE_LOWER, PAGE_UPPER, PAGE_DIGITS, PAGE_SYMBOLS, PAGE_COUNT };
+static const char* const PAGES[PAGE_COUNT] = {
+    "abcdefghijklmnopqrstuvwxyz",
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+    "0123456789",
     "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
 };
-static const char* const LABELS[TM_TEXT_INPUT_ACTIONS] = {"Aa", "#+", "Space", "Del", "OK"};
-static const char* const SHORT_LABELS[TM_TEXT_INPUT_ACTIONS] = {"Aa", "#+", "Spc", "Del", "OK"};
+/* The action labels, shorter and shorter for narrower screens. */
+static const char* const LABELS[][TM_TEXT_INPUT_ACTIONS] = {
+    {"Aa", "123", "#+", "Space", "Del", "OK"},
+    {"Aa", "123", "#+", "Spc", "Del", "OK"},
+    {"Aa", "12", "#", "_", "<", "OK"},
+};
+#define LABEL_SETS (sizeof(LABELS) / sizeof(LABELS[0]))
 
 static bool printable(const char* text, size_t capacity, size_t* length) {
     for (size_t i = 0; i < capacity; i++) {
@@ -74,12 +81,21 @@ static uint8_t grid_rows(const tm_text_input_popup* p) {
     return (uint8_t)((key_count(p) + cols(p) - 1) / cols(p));
 }
 static uint8_t rows(const tm_text_input_popup* p) { return grid_rows(p) + 1; } /* + actions */
+/* Rows of the tallest page, so the keys keep their size from page to page. */
+static uint8_t layout_rows(const tm_text_input_popup* p) {
+    if (p->charset)
+        return rows(p);
+    size_t most = 0;
+    for (uint8_t i = 0; i < PAGE_COUNT; i++)
+        most = MAX(most, strlen(PAGES[i]));
+    return (uint8_t)((most + cols(p) - 1) / cols(p) + 1);
+}
 static int16_t head_h(const tm_text_input_popup* p) { return inner_h(p) >= 40 ? HEAD_H : 0; }
 static int16_t keys_top(const tm_text_input_popup* p) { return head_h(p) + BOX_H + 1; }
 static int16_t keys_room(const tm_text_input_popup* p) { return inner_h(p) - keys_top(p); }
 /* Rows share the room under the text; when that makes them too short, fewer show. */
 static int16_t key_h(const tm_text_input_popup* p) {
-    return MAX(keys_room(p) / rows(p), KEY_MIN_H);
+    return MAX(keys_room(p) / layout_rows(p), KEY_MIN_H);
 }
 /* The action row stays at the bottom and only the grid scrolls, when there is room
  * for a row of each; on shorter screens the action row scrolls with the grid. */
@@ -105,12 +121,17 @@ static uint8_t row_len(const tm_text_input_popup* p, uint8_t row) {
     return (uint8_t)MIN((size_t)cols(p), key_count(p) - (size_t)row * cols(p));
 }
 
-/* An action's label: the short ones when the long ones leave under 4 px between them. */
+/* An action's label: the longest set that leaves 4 px between them. */
 static const char* label(const tm_text_input_popup* p, uint8_t i) {
-    int16_t w = 0;
-    for (uint8_t k = 0; k < p->action_n; k++)
-        w += (int16_t)tm_text_width(LABELS[p->actions[k]], FONT) + 4;
-    return (w > inner_w(p) ? SHORT_LABELS : LABELS)[p->actions[i]];
+    size_t set = 0;
+    for (; set + 1 < LABEL_SETS; set++) {
+        int16_t w = 0;
+        for (uint8_t k = 0; k < p->action_n; k++)
+            w += (int16_t)tm_text_width(LABELS[set][p->actions[k]], FONT) + 4;
+        if (w <= inner_w(p))
+            break;
+    }
+    return LABELS[set][p->actions[i]];
 }
 
 /* Left edge (inside the window) and width of a key; actions get their label's width
@@ -136,8 +157,11 @@ static void key_x(const tm_text_input_popup* p, uint8_t row, uint8_t col, int16_
     }
 }
 
-/* Keeps the selected row on screen; the fixed action row needs no scrolling. */
+/* Keeps the selected row on screen (the fixed action row needs no scrolling) and
+ * remembers the last key, for coming back from the actions. */
 static void follow(tm_text_input_popup* p) {
+    if (p->row < grid_rows(p))
+        p->key_row = p->row, p->key_col = p->col;
     if (p->row >= scroll_rows(p))
         return;
     const uint8_t shown = visible_rows(p);
@@ -153,6 +177,7 @@ static void set_actions(tm_text_input_popup* p) {
     p->action_n = 0;
     if (!p->charset) {
         p->actions[p->action_n++] = TM_TEXT_INPUT_CASE;
+        p->actions[p->action_n++] = TM_TEXT_INPUT_DIGITS;
         p->actions[p->action_n++] = TM_TEXT_INPUT_SYMBOLS;
     }
     if (!p->charset || strchr(p->charset, ' '))
@@ -243,8 +268,10 @@ static void entry(tm_page_addr addr) {
         memcpy(p->draft, p->buffer, length + 1);
     }
     p->length = length;
-    p->keys = 0;
-    p->row = p->col = p->top_row = 0;
+    p->keys = PAGE_LOWER;
+    p->row = p->col = p->top_row = p->key_row = p->key_col = 0;
+    p->scanning = false;
+    p->whole_row = true; // rows first; a d-pad key picks a key straight away
     p->discard_armed = false;
     p->result = TM_TEXT_INPUT_EDITING;
     p->win_y.pos_cur = screen_h(p);
@@ -273,7 +300,19 @@ static void show(tm_page_addr addr) {
 }
 
 //------- Selection
+/* On the grid's rows (a whole row or one key) or on the actions. */
+static bool on_actions(const tm_text_input_popup* p) { return p->row >= grid_rows(p); }
+
+/* A whole row: the rows are picked first. */
+static void to_rows(tm_text_input_popup* p) { p->whole_row = true; }
+
+/* The d-pad: one key at a time, by rows and columns; from a whole row, it starts
+ * from the row's last key. */
 void tm_text_input_popup_move(tm_text_input_popup* p, int8_t dr, int8_t dc) {
+    if (p->whole_row && !on_actions(p))
+        p->col = p->row == p->key_row ? MIN(p->key_col, row_len(p, p->row) - 1) : 0;
+    p->whole_row = false;
+    p->scanning = false;
     if (dr) {
         int16_t x, w;
         key_x(p, p->row, p->col, &x, &w);
@@ -294,16 +333,17 @@ void tm_text_input_popup_move(tm_text_input_popup* p, int8_t dr, int8_t dc) {
 }
 
 void tm_text_input_popup_step(tm_text_input_popup* p, bool next) {
-    const size_t keys = key_count(p), n = keys + p->action_n;
-    size_t at = p->row < grid_rows(p) ? (size_t)p->row * cols(p) + p->col : keys + p->col;
-    at = (at + (next ? 1 : n - 1)) % n;
-    if (at < keys) {
-        p->row = (uint8_t)(at / cols(p));
-        p->col = (uint8_t)(at % cols(p));
-    } else {
-        p->row = grid_rows(p);
-        p->col = (uint8_t)(at - keys);
+    uint8_t n, *at;
+    if (on_actions(p)) { // along the actions
+        n = p->action_n, at = &p->col;
+    } else if (p->whole_row) { // down the rows
+        n = grid_rows(p), at = &p->row;
+        p->scanning = true;
+    } else { // along the row
+        n = row_len(p, p->row), at = &p->col;
+        p->scanning = true;
     }
+    *at = (uint8_t)((*at + (next ? 1 : n - 1)) % n);
     follow(p);
 }
 
@@ -312,16 +352,27 @@ bool tm_text_input_popup_select_action(tm_text_input_popup* p, tm_text_input_act
         if (p->actions[i] == action) {
             p->row = grid_rows(p);
             p->col = i;
+            p->whole_row = false;
             follow(p);
             return true;
         }
     return false;
 }
 
+bool tm_text_input_popup_back(tm_text_input_popup* p) {
+    if (on_actions(p))
+        return false;
+    if (!p->whole_row && p->scanning) // from a key next/prev reached to its row
+        to_rows(p);
+    else // from the rows, or a key the d-pad reached, to OK
+        tm_text_input_popup_select_action(p, TM_TEXT_INPUT_OK);
+    return true;
+}
+
 bool tm_text_input_popup_select_char(tm_text_input_popup* p, char character) {
     if (character == ' ')
         return tm_text_input_popup_select_action(p, TM_TEXT_INPUT_SPACE);
-    const uint8_t pages = p->charset ? 1 : sizeof(PAGES) / sizeof(PAGES[0]);
+    const uint8_t pages = p->charset ? 1 : PAGE_COUNT;
     const uint8_t from = p->keys;
     for (uint8_t i = 0; i < pages; i++) {
         p->keys = (uint8_t)((from + i) % pages); // the page shown first, if it has it
@@ -329,6 +380,7 @@ bool tm_text_input_popup_select_char(tm_text_input_popup* p, char character) {
             if (key_char(p, k) == character) {
                 p->row = (uint8_t)(k / cols(p));
                 p->col = (uint8_t)(k % cols(p));
+                p->whole_row = p->scanning = false;
                 p->top_row = (uint8_t)MIN(p->top_row, MAX(scroll_rows(p) - visible_rows(p), 0));
                 follow(p);
                 return true;
@@ -338,15 +390,21 @@ bool tm_text_input_popup_select_char(tm_text_input_popup* p, char character) {
     return false;
 }
 
-/* Turns to another page; the selection stays where it was, inside the new grid. */
+/* Turns to another page and goes on typing there, from its first row. */
 static void turn(tm_text_input_popup* p, uint8_t keys) {
-    const bool on_actions = p->row >= grid_rows(p);
     p->keys = keys;
-    if (on_actions)
-        p->row = grid_rows(p);
-    else if (p->row >= grid_rows(p) || p->col >= row_len(p, p->row))
-        p->row = grid_rows(p) - 1, p->col = row_len(p, p->row) - 1;
-    p->top_row = (uint8_t)MIN(p->top_row, MAX(scroll_rows(p) - visible_rows(p), 0));
+    p->row = p->col = p->top_row = 0;
+    to_rows(p);
+    follow(p);
+}
+
+/* From the actions back to the keys, as they were left. */
+static void to_keys(tm_text_input_popup* p) {
+    if (!grid_rows(p))
+        return;
+    p->row = MIN(p->key_row, grid_rows(p) - 1);
+    p->col = MIN(p->key_col, row_len(p, p->row) - 1);
+    p->whole_row = p->scanning; // the row again for next/prev, the key for a d-pad
     follow(p);
 }
 
@@ -376,14 +434,27 @@ void tm_text_input_popup_finish(tm_text_input_popup* p, bool save) {
 }
 
 bool tm_text_input_popup_activate(tm_text_input_popup* p) {
-    if (p->row < grid_rows(p)) {
-        tm_text_input_popup_append(p, key_char(p, (size_t)p->row * cols(p) + p->col));
+    if (!on_actions(p)) {
+        if (p->whole_row) { // into the row, at its first key
+            p->whole_row = false;
+            p->scanning = true;
+            p->col = 0;
+            follow(p);
+        } else { // type the key; next/prev go back to picking rows
+            tm_text_input_popup_append(p, key_char(p, (size_t)p->row * cols(p) + p->col));
+            if (p->scanning)
+                to_rows(p);
+        }
         return false;
     }
     switch ((tm_text_input_action)p->actions[p->col]) {
-    case TM_TEXT_INPUT_CASE: turn(p, p->keys == 0 ? 1 : 0); break;
-    case TM_TEXT_INPUT_SYMBOLS: turn(p, p->keys == 2 ? 0 : 2); break;
-    case TM_TEXT_INPUT_SPACE: tm_text_input_popup_append(p, ' '); break;
+    case TM_TEXT_INPUT_CASE: turn(p, p->keys == PAGE_LOWER ? PAGE_UPPER : PAGE_LOWER); break;
+    case TM_TEXT_INPUT_DIGITS: turn(p, PAGE_DIGITS); break;
+    case TM_TEXT_INPUT_SYMBOLS: turn(p, PAGE_SYMBOLS); break;
+    case TM_TEXT_INPUT_SPACE: // and back to typing
+        tm_text_input_popup_append(p, ' ');
+        to_keys(p);
+        break;
     case TM_TEXT_INPUT_BACKSPACE: tm_text_input_popup_backspace(p); break;
     case TM_TEXT_INPUT_OK: tm_text_input_popup_finish(p, true); return true;
     default: break;
@@ -413,7 +484,8 @@ static bool react(tm_page_addr addr) {
         case TM_MSG_RIGHT: tm_text_input_popup_move(p, 0, msg == TM_MSG_RIGHT ? 1 : -1); break;
         case TM_MSG_CLICK: done = tm_text_input_popup_activate(p); break;
         case TM_MSG_RETURN:
-            if (armed || !changed(p)) {
+            if (tm_text_input_popup_back(p)) { // a key to its row, the rows to the actions
+            } else if (armed || !changed(p)) {
                 tm_text_input_popup_finish(p, false);
                 done = true;
             } else {
@@ -437,6 +509,12 @@ static void indicator(tm_page_addr addr) {
     tm_ui* ui = p->page.ui;
     int16_t x, w;
     key_x(p, p->row, p->col, &x, &w);
+    if (p->whole_row && !on_actions(p)) { // the whole row, from its first key to its last
+        int16_t lx, lw;
+        key_x(p, p->row, 0, &x, &w);
+        key_x(p, p->row, row_len(p, p->row) - 1, &lx, &lw);
+        w = lx + lw - x;
+    }
     ui->indicator.x.pos_tgt = INSET_X + x + 1;
     ui->indicator.y.pos_tgt = p->win_y.pos_tgt + INSET + keys_top(p) + row_y(p, p->row);
     ui->indicator.w.pos_tgt = w - 2;

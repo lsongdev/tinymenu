@@ -195,7 +195,7 @@ int main(int argc, char **argv)
     snapshot("26_about");
     keys("nnnne");
     snapshot("27_msg_popup");
-    // Nested text input: the keyboard, by next/prev/click/back and by the d-pad.
+    // Nested text input, by next/prev/click/back as on two buttons: rows, then keys.
     char name[48] = "tinymenu-lab-5G-upstairs", scratch[sizeof(name)];
     tm_text_input_popup text;
     if (!tm_text_input_popup_init(&text, &ui, "Device name", name, scratch,
@@ -204,18 +204,18 @@ int main(int argc, char **argv)
     ui.params = tm_default_params;
     tm_jump_to_page(ui.current_page, &text);
     run(100);
-    snapshot("28_text_input");
-    keys("nnnnn"); // next along the keys to 'f'
+    snapshot("28_text_input"); // the first row, whole
+    keys("nn");    // down two rows: u..z
     snapshot("29_text_keys");
-    keys("e");     // append 'f'
-    keys("pppppu"); // back to 'a'; up from the first row wraps to the action under it, Aa
+    keys("ennne"); // into the row, along to 'x', type it: back on the row
+    keys("b");     // done with the keys: the actions, at OK
     snapshot("30_text_actions");
-    keys("rrre");  // Del removes the 'f'
-    keys("lle");   // #+ turns to the symbols
-    keys("nnnne"); // on through Space, Del and OK to the first symbol, '!'
-    keys("b");     // unsaved changes: back asks again
+    keys("pe");    // Del removes the 'x'
+    keys("ppe");   // #+ turns to the symbols, on their first row
+    keys("ee");    // into it and type '!'
+    keys("bb");    // to the actions; unsaved changes: back asks again
     snapshot("31_text_discard");
-    keys("p");     // disarm; before the first key comes OK
+    keys("pn");    // disarm, and back on OK
     ui.params.style.animate = false;
     ui.params.style.highlight = TM_HIGHLIGHT_FRAME;
     tm_ui_invalidate(&ui); // a still UI redraws only when told
