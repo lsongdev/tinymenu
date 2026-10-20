@@ -23,6 +23,7 @@ typedef struct tm_tile_page { // 磁贴页面
     uint8_t select_item;      // 选中选项
     uint8_t icon_w, icon_h;   // 选项图标的大小(默认 30x30)
     tm_icon_name_mode name_mode; // 哪些图标下显示名称：全部(默认)、只有选中项或不显示
+    tm_slide_str name_ss;        // 选中项的名称放不下时滚动
     struct tm_tile_page_vars vars; // 本页面的状态
 } tm_tile_page;                               // 磁帖页面类型(所有类型页面，类型成员为第一个，方便查看)
 // TitlePage的接口函数

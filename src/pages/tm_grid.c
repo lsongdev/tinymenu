@@ -32,6 +32,7 @@ SAME_FIELD(select_item);
 SAME_FIELD(icon_w);
 SAME_FIELD(icon_h);
 SAME_FIELD(name_mode);
+SAME_FIELD(name_ss);
 
 #define GRID_BOX(g) tm_icon_item_w((g)->icon_w)      // 每一项的选中框宽度
 #define GRID_GAP 2                                  // 项与项之间
@@ -91,7 +92,8 @@ static void draw(tm_grid_page* g) {
             continue;
         tm_icon_item_draw(&c, box_x(g, i), y, &g->option_array[i], g->icon_w, g->icon_h,
                           tm_icon_menu_shows_name((tm_icon_menu*)g, i),
-                          g->name_mode == TM_ICON_NAME_ALL ? cell_w(g) : area_w(ui));
+                          g->name_mode == TM_ICON_NAME_ALL ? cell_w(g) : area_w(ui),
+                          i == g->select_item ? &g->name_ss : NULL, ui->time);
     }
     // Scroll bar, only when there is more than fits.
     const int16_t total = content_h(g);
@@ -108,6 +110,7 @@ static void in_init(tm_page_addr addr) {
     tm_grid_page* g = addr;
     follow_selection(g);
     g->scroll.pos_cur = g->scroll.pos_tgt;
+    tm_icon_menu_name_reset((tm_icon_menu*)g);
 }
 
 static bool grid_in(tm_page_addr addr) {
@@ -120,6 +123,7 @@ static bool grid_in(tm_page_addr addr) {
 
 static void show(tm_page_addr addr) {
     grid_in(addr);
+    tm_icon_menu_name_step(addr);
 }
 
 bool tm_grid_page_move(tm_grid_page* g, int16_t delta) {
@@ -145,6 +149,8 @@ bool tm_grid_page_move(tm_grid_page* g, int16_t delta) {
 void tm_grid_page_select(tm_grid_page* g, uint8_t item) {
     if (item >= g->item_num)
         return;
+    if (item != g->select_item)
+        tm_icon_menu_name_reset((tm_icon_menu*)g);
     g->select_item = item;
     follow_selection(g);
 }

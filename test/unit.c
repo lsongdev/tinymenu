@@ -694,6 +694,42 @@ static void test_grid_centred(void) {
     }
 }
 
+/* A name longer than its room is cut, but the selected one scrolls like a list
+ * row, starts over when the selection moves, and lets the UI settle after. */
+static void test_icon_name_slide(void) {
+    static uint8_t fb[128 * 64 / 8];
+    tm_ui ui;
+    tm_ui_init(&ui, fb, 128, 64, NULL, NULL);
+    tm_option opts[] = {{.text = "A very long name"}, {.text = "B"}, {.text = "Another long one"}};
+    tm_grid_page g;
+    tm_grid_page_init(&g, &ui, 3, opts, 0, NULL);
+    int min_x = 0, i = 0, awake = 0;
+    for (; i < 2000 && !(ui.is_motionless && i > 50); i++) {
+        tm_ui_proc(&ui, 10);
+        if (g.name_ss.str_start_x < min_x) min_x = g.name_ss.str_start_x;
+        awake += g.name_ss.slide_enable && !ui.is_motionless;
+    }
+    CHECK(g.name_ss.str == opts[0].text && g.name_ss.canvas.w < (int)tm_text_width(opts[0].text, DEFAULT_LIST_TEXT_FONT));
+    CHECK(min_x < 0 && awake > 0);                  // it scrolled, and the UI stayed awake meanwhile
+    CHECK(ui.is_motionless && g.name_ss.str_start_x == 0); // then came back to its start and settled
+    tm_ui_send(&ui, TM_MSG_RIGHT); // a short name does not scroll
+    for (i = 0; i < 300; i++) tm_ui_proc(&ui, 10);
+    CHECK(g.name_ss.str == NULL && ui.is_motionless);
+    tm_ui_send(&ui, TM_MSG_RIGHT);
+    tm_ui_proc(&ui, 10);
+    CHECK(g.select_item == 2 && g.name_ss.str == opts[2].text && g.name_ss.str_start_x == 0); // starts over
+
+    tm_tile_page t; // the tile page does the same with its selected name
+    opts[0].text = "A name wider than the screen";
+    tm_tile_page_init(&t, &ui, 3, opts, NULL);
+    tm_jump_to_page(&g, &t);
+    for (min_x = 0, i = 0; i < 3000; i++) {
+        tm_ui_proc(&ui, 10);
+        if (ui.current_page == (tm_page*)&t && t.name_ss.str_start_x < min_x) min_x = t.name_ss.str_start_x;
+    }
+    CHECK(min_x < 0 && ui.is_motionless);
+}
+
 int main(void)
 {
     test_expand16();
@@ -707,6 +743,7 @@ int main(void)
     test_slide();
     test_grid();
     test_grid_centred();
+    test_icon_name_slide();
     test_presets();
     test_menu_page();
     test_list_popup();

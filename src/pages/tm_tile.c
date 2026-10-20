@@ -18,6 +18,8 @@ static int16_t box_top(const tm_tile_page* t) { return (t->page.ui->fb.h - block
 #define BOX_X(icon_x) ((icon_x) - TILE_ICON_IND_L)
 // Room for a name: up to the neighbours' names, or the screen when only the selected has one.
 #define NAME_W(t) ((t)->name_mode == TM_ICON_NAME_ALL ? (t)->vars.pitch - 2 : (t)->page.ui->fb.w)
+// The selected item's name scrolls when it does not fit; the others are cut.
+#define NAME_SS(t, i) ((i) == (t)->select_item ? &(t)->name_ss : NULL)
 #define TILE_ICON_S (self->vars.pitch) // 图标间距(中心到中心)
 
 //**********************每个以Page为基类的类都有对应的AnimInit、show、React方法
@@ -33,6 +35,7 @@ void tm_tile_page_in_init(tm_page_addr page_addr) {
     self->vars.iconX.pos_tgt = TILE_ICON_S;
     self->vars.iconY.pos_cur = -(self->icon_h / 2) - TILE_ICON_IND_U; // 选中框上沿
     self->vars.iconY.pos_tgt = box_top(self);
+    tm_icon_menu_name_reset((tm_icon_menu*)self);
 }
 bool tm_tile_page_in(tm_page_addr page_addr) {
     tm_tile_page* self = (tm_tile_page*)page_addr;
@@ -54,7 +57,7 @@ bool tm_tile_page_in(tm_page_addr page_addr) {
         tm_icon_item_draw(&(ui->w_all), BOX_X(temp), (int16_t)(self->vars.iconY.pos_cur),
                           &self->option_array[i], self->icon_w, self->icon_h,
                           tm_icon_menu_shows_name((tm_icon_menu*)self, i),
-                          NAME_W(self));
+                          NAME_W(self), NAME_SS(self, i), ui->time);
     }
     if (self->vars.iconX.pos_cur == self->vars.iconX.pos_tgt) {
         ret = true;
@@ -74,7 +77,9 @@ void tm_tile_page_show(tm_page_addr page_addr) {
                           BOX_X(((ui)->fb.w - self->icon_w) / 2 + (int16_t)(self->vars.iconX.pos_cur) +
                                 i * TILE_ICON_S),
                           box_top(self), &self->option_array[i], self->icon_w, self->icon_h,
-                          tm_icon_menu_shows_name((tm_icon_menu*)self, i), NAME_W(self));
+                          tm_icon_menu_shows_name((tm_icon_menu*)self, i), NAME_W(self),
+                          NAME_SS(self, i), ui->time);
+    tm_icon_menu_name_step((tm_icon_menu*)self);
 }
 void tm_tile_page_indicator_ctrl(tm_page_addr page_addr) {
     tm_tile_page* self = (tm_tile_page*)page_addr;
@@ -193,7 +198,10 @@ bool tm_tile_page_move(tm_tile_page* tp, int16_t delta) {
     const uint8_t from = tp->select_item;
     for (; delta < 0; delta++) tile_prev(tp);
     for (; delta > 0; delta--) tile_next(tp);
-    return tp->select_item != from;
+    if (tp->select_item == from)
+        return false;
+    tm_icon_menu_name_reset((tm_icon_menu*)tp);
+    return true;
 }
 
 void tm_tile_page_select(tm_tile_page* tp, uint8_t index) {
