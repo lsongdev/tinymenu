@@ -195,7 +195,7 @@ int main(int argc, char **argv)
     snapshot("26_about");
     keys("nnnne");
     snapshot("27_msg_popup");
-    // Nested text input, by next/prev/click/back as on two buttons: rows, then keys.
+    // Nested text input, by next/prev/click/back as on two buttons.
     char name[48] = "tinymenu-lab-5G-upstairs", scratch[sizeof(name)];
     tm_text_input_popup text;
     if (!tm_text_input_popup_init(&text, &ui, "Device name", name, scratch,
@@ -204,15 +204,15 @@ int main(int argc, char **argv)
     ui.params = tm_default_params;
     tm_jump_to_page(ui.current_page, &text);
     run(100);
-    snapshot("28_text_input"); // the first row, whole
-    keys("nn");    // down two rows: u..z
+    snapshot("28_text_input");
+    keys("nnnnn"); // along the keys to 'f'
     snapshot("29_text_keys");
-    keys("ennne"); // into the row, along to 'x', type it: back on the row
+    keys("e");     // type it
     keys("b");     // done with the keys: the actions, at OK
     snapshot("30_text_actions");
-    keys("pe");    // Del removes the 'x'
-    keys("ppe");   // #+ turns to the symbols, on their first row
-    keys("ee");    // into it and type '!'
+    keys("pe");    // Del removes the 'f'
+    keys("ppe");   // #+ turns to the symbols, on '!'
+    keys("e");     // type it
     keys("bb");    // to the actions; unsaved changes: back asks again
     snapshot("31_text_discard");
     keys("pn");    // disarm, and back on OK

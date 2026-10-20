@@ -37,8 +37,6 @@ typedef struct {
     uint8_t col;     /* selected column, or action in the action row */
     uint8_t top_row; /* first row of the grid on screen when they do not all fit */
     uint8_t key_row, key_col; /* the last key selected, to come back to from the actions */
-    bool whole_row; /* a whole row of the grid is selected, not one key */
-    bool scanning;  /* the key was reached with next/prev: typing it goes back to rows */
     uint8_t action_n;
     uint8_t actions[TM_TEXT_INPUT_ACTIONS]; /* the action row, left to right */
     tm_text_input_result result;
@@ -57,15 +55,13 @@ typedef struct {
  * Returns false for invalid arguments; popup is left untouched.
  * Each entry copies buffer into draft. Only OK writes back to buffer.
  *
- * Keys are picked by row, then by key, with either kind of input:
- * - next/prev (two buttons): move a whole row; click enters it, next/prev pick
- *   a key in it, click types it and goes back to the row. Return leaves the row.
- * - a d-pad: up/down/left/right move over the keys (wrapping), click types.
- * Return from the rows (or from a key the d-pad reached) goes to the actions,
- * on OK; next/prev move along them and click acts: Aa, 123 and #+ turn to
- * their page and go on typing, Space types a space and goes back to the keys,
- * Del deletes the last character. Return there cancels; with unsaved changes
- * it asks for a second return first. Callbacks see result after processing.
+ * Next/prev go along the page's keys (two buttons), up/down/left/right move
+ * over them (a d-pad), both wrapping; click types the key. Return goes to the
+ * actions, on OK: next/prev or left/right move along them (next/prev past
+ * either end go back to the keys) and click acts: Aa, 123 and #+ turn to their
+ * page and go on typing, Space types a space and goes back to the keys, Del
+ * deletes the last character. Return there cancels; with unsaved changes it
+ * asks for a second return first. Callbacks see result after processing.
  */
 bool tm_text_input_popup_init(tm_text_input_popup* popup, tm_ui* ui,
                               const char* title, char* buffer, char* draft,
@@ -74,10 +70,11 @@ bool tm_text_input_popup_init(tm_text_input_popup* popup, tm_ui* ui,
 /* Helpers for custom input handlers (auto_input = false). */
 /* The d-pad: moves one key by rows and columns, wrapping. */
 void tm_text_input_popup_move(tm_text_input_popup* popup, int8_t rows, int8_t cols);
-/* next/prev: the next or previous row, key in the row, or action. */
+/* next/prev: the next or previous key of the page, or action (past either end
+ * of the actions, back to the keys). */
 void tm_text_input_popup_step(tm_text_input_popup* popup, bool next);
-/* return: from a key to its row, from the rows to the actions; false if already
- * on the actions (where return cancels). */
+/* return: from the keys to the actions, at OK; false if already there (where
+ * return cancels). */
 bool tm_text_input_popup_back(tm_text_input_popup* popup);
 /* Selects a character's key, turning to its page; false if there is none. */
 bool tm_text_input_popup_select_char(tm_text_input_popup* popup, char character);
@@ -85,7 +82,7 @@ bool tm_text_input_popup_select_char(tm_text_input_popup* popup, char character)
 bool tm_text_input_popup_select_action(tm_text_input_popup* popup, tm_text_input_action action);
 bool tm_text_input_popup_append(tm_text_input_popup* popup, char character);
 bool tm_text_input_popup_backspace(tm_text_input_popup* popup);
-/* Click on the selected row, key or action. Returns true if that closed the popup (OK). */
+/* Click on the selected key or action. Returns true if that closed the popup (OK). */
 bool tm_text_input_popup_activate(tm_text_input_popup* popup);
 /* Call from react/callback; custom callbacks must return true after finishing. */
 void tm_text_input_popup_finish(tm_text_input_popup* popup, bool save);

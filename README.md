@@ -102,7 +102,7 @@ right and up forward, left and down back.
 | value popup | lower / raise | up and right raise, down and left lower |
 | digit popup | pick a digit; click, then change it | left/right pick, up/down change at once |
 | confirm popup | scroll the text, then switch button | up/down scroll, left/right switch |
-| text input | a row, then a key in it (click between) | move over the grid of keys, wrapping |
+| text input | the page's keys; return for the actions | move over the grid of keys, wrapping |
 | message popup | scroll | up/down scroll |
 
 `tm_msg_step()` (-1/+1 down a list) and `tm_msg_amount()` (-1/+1 for a value,
@@ -144,20 +144,13 @@ own. The grid takes as many columns as fit (ten at most); when its rows do not
 all fit, as many as the screen allows show and scroll between the fixed text
 and actions (too short for both, the actions scroll with the grid).
 
-Keys are picked by row, then by key, so two buttons are quick too:
-
-| | next / prev (two buttons) | d-pad |
-|---|---|---|
-| pick a row | next/prev move a whole row | up/down |
-| pick a key | click enters the row, next/prev along it | left/right |
-| type it | click, back to the row | click, stays on the key |
-| the actions | return (from a key: first back to its row), at `OK` | return, or down past the last row |
-
-On the actions next/prev and left/right move along them. `Aa`, `123` and `#+`
-turn to their page and go on typing, `Space` types a space and goes back to
-the keys, `Del` deletes the last character and stays. Return there cancels,
-asking for a second return when there are unsaved changes. A d-pad on a whole
-row picks a key straight away, so the two kinds of input mix.
+Next and previous go along the page's keys (two buttons), up, down, left and
+right move over them (a d-pad), both wrapping; click types the selected key.
+Return goes to the actions, on `OK`: next/previous or left/right move along
+them, and next or previous past either end goes back to the keys. `Aa`, `123`
+and `#+` turn to their page and go on typing, `Space` types a space and goes
+back to the keys, `Del` deletes the last character and stays. Return there
+cancels, asking for a second return when there are unsaved changes.
 
 Pass a charset to limit the keys, such as `"0123456789"` for a PIN: its
 characters make one page, without `Aa`, `123` and `#+`, and `Space` only when
