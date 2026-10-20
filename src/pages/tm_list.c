@@ -419,6 +419,7 @@ void tm_list_page_init(
     lp->mode = mode;
     lp->item_num = item_num;
     lp->select_item = 0;
+    lp->ind_y_tgt = 0; // 重复初始化同一个对象时，选中框不能停在旧列表的位置
     lp->option_array = option_array;
     lp->icon_w = lp->icon_h = 0; // 文字列表
     lp->line_h = LIST_TEXT_LINE_H;

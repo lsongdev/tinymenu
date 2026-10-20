@@ -198,7 +198,7 @@ static void tm_ui_flush_changed(tm_ui* ui) {
         end = page + 1;
     }
     ui->flush_all = false;
-    if (first < end) ui->flush(&ui->fb, first, end, ui->flush_user);
+    if (first < end && ui->flush) ui->flush(&ui->fb, first, end, ui->flush_user);
 }
 
 void tm_ui_invalidate(tm_ui* ui) {

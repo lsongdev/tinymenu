@@ -53,9 +53,16 @@ static int16_t rows(const tm_grid_page* g) {
 }
 static int16_t content_h(const tm_grid_page* g) { return rows(g) * pitch(g); }
 
+// Left edge of the first column's box: the boxes are centred on the whole screen,
+// not on the room left of the scroll bar, unless that would put them under the bar.
+static int16_t grid_left(const tm_grid_page* g) {
+    const int16_t span = (tm_grid_page_cols(g) - 1) * cell_w(g) + GRID_BOX(g);
+    return MAX(MIN((g->page.ui->fb.w - span) / 2, area_w(g->page.ui) - span), 0);
+}
+
 // Left edge of the selection box of item i, and its top before scrolling.
 static int16_t box_x(const tm_grid_page* g, uint8_t i) {
-    return (int16_t)(i % tm_grid_page_cols(g)) * cell_w(g) + (cell_w(g) - GRID_BOX(g)) / 2;
+    return grid_left(g) + (int16_t)(i % tm_grid_page_cols(g)) * cell_w(g);
 }
 static int16_t box_y(const tm_grid_page* g, uint8_t i) {
     return (int16_t)(i / tm_grid_page_cols(g)) * pitch(g) + 1;

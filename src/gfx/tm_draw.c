@@ -8,7 +8,7 @@
 void tm_canvas_write_byte(tm_canvas* canvas, int16_t x, int16_t y, uint8_t val) {
     uint8_t n = 0, m = 0, temp1 = 0, temp2 = 0;
     int16_t real_y = 0, over_bit1 = 0, over_bit2 = 0;
-    if (x > canvas->w || y > canvas->h || x < 0 || y < -7)
+    if (x >= canvas->w || y >= canvas->h || x < 0 || y < -7)
         return; // 超出窗口大小
     if (y + 7 > (canvas->h - 1))
         val &= (~(0xFF << (canvas->h - y))); // 超过窗口的部分不显示
@@ -51,6 +51,22 @@ static bool clip_vertical(const tm_canvas* canvas, int16_t x, int16_t* start, in
         return false;
     if (*start < 0) *start = 0;
     if (*end >= canvas->h) *end = canvas->h - 1;
+    return true;
+}
+
+/* Horizontal endpoints are inclusive and relative to the clipping canvas. */
+static bool clip_horizontal(const tm_canvas* canvas, int16_t y, int16_t* start, int16_t* end) {
+    if (canvas->w <= 0 || y < 0 || y >= canvas->h)
+        return false;
+    if (*start > *end) {
+        int16_t swap = *start;
+        *start = *end;
+        *end = swap;
+    }
+    if (*end < 0 || *start >= canvas->w)
+        return false;
+    if (*start < 0) *start = 0;
+    if (*end >= canvas->w) *end = canvas->w - 1;
     return true;
 }
 
@@ -106,21 +122,8 @@ void tm_canvas_draw_dashed_line_v(tm_canvas* canvas, int16_t x, int16_t y_start,
  * @param : 注意x_end > x_start
  */
 void tm_canvas_draw_line_h(tm_canvas* canvas, int16_t x_start, int16_t x_end, int16_t y) {
-    if (x_start < 0)
-        x_start = 0;
-    if (x_end < 0)
-        x_end = 0;
-    if (x_start > canvas->w)
-        x_start = canvas->w;
-    if (x_end > canvas->w)
-        x_end = canvas->w;
-    if (y > canvas->h || y < 0)
+    if (!clip_horizontal(canvas, y, &x_start, &x_end))
         return;
-    if (x_start > x_end) {
-        int16_t index = x_end;
-        x_end = x_start;
-        x_start = index;
-    }
     for (int16_t i = 0; i <= (x_end - x_start); i++)
         tm_canvas_write_byte(canvas, x_start + i, y, 0x01);
 }
@@ -132,21 +135,8 @@ void tm_canvas_draw_line_h(tm_canvas* canvas, int16_t x_start, int16_t x_end, in
  */
 void tm_canvas_draw_dashed_line_h(tm_canvas* canvas, int16_t x_start, int16_t x_end, int16_t y,
                                   uint8_t DashedStyle, uint8_t Unit_Length) {
-    if (x_start < 0)
-        x_start = 0;
-    if (x_end < 0)
-        x_end = 0;
-    if (x_start > canvas->w)
-        x_start = canvas->w;
-    if (x_end > canvas->w)
-        x_end = canvas->w;
-    if (y > canvas->h || y < 0)
+    if (!clip_horizontal(canvas, y, &x_start, &x_end))
         return;
-    if (x_start > x_end) {
-        int16_t index = x_end;
-        x_end = x_start;
-        x_start = index;
-    }
     for (int16_t i = 0; i <= (x_end - x_start); i++)
         tm_canvas_write_byte(canvas, x_start + i, y, (DashedStyle >> (i % Unit_Length)) & 0x01);
 }

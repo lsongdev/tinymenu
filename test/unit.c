@@ -614,23 +614,106 @@ static void test_vertical_clipping(void)
     }
 }
 
+/* Horizontal lines stop at the canvas's last column, like vertical ones at its last row. */
+static void test_horizontal_clipping(void)
+{
+    enum { W = 64, H = 24 };
+    uint8_t bits[W * ((H + 7) / 8)];
+    tm_fb fb;
+    tm_fb_init(&fb, bits, W, H);
+    tm_fb_set_color(&fb, 1);
+    tm_canvas c = {&fb, 5, 3, 20, 10};
+    for (int dashed = 0; dashed < 2; dashed++) {
+        tm_fb_clear(&fb);
+        if (dashed) tm_canvas_draw_dashed_line_h(&c, c.w + 10, -2, 4, 0xff, 8);
+        else tm_canvas_draw_line_h(&c, c.w + 10, -2, 4);
+        for (int y = 0; y < H; y++) for (int x = 0; x < W; x++)
+            CHECK(lit(&fb, x, y) == (y == c.start_y + 4 && x >= c.start_x && x < c.start_x + c.w));
+        tm_fb_clear(&fb);
+        const int outside[][3] = {{0, 5, -1}, {0, 5, c.h}, {-6, -1, 2}, {c.w, c.w + 3, 2}};
+        for (unsigned i = 0; i < sizeof(outside) / sizeof(outside[0]); i++) {
+            if (dashed) tm_canvas_draw_dashed_line_h(&c, outside[i][0], outside[i][1], outside[i][2], 0xff, 8);
+            else tm_canvas_draw_line_h(&c, outside[i][0], outside[i][1], outside[i][2]);
+        }
+        for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) CHECK(!lit(&fb, x, y));
+    }
+    tm_fb_clear(&fb);
+    tm_canvas_write_byte(&c, c.w, 0, 0xff); // one past the right edge
+    for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) CHECK(!lit(&fb, x, y));
+}
+
+/* Re-initialising a list page starts it over: a shorter list after a long one,
+ * scrolled to the bottom, still shows its rows. A NULL flush only renders. */
+static void test_list_reinit(void) {
+    uint8_t fb[128 * 64 / 8];
+    tm_ui ui;
+    tm_ui_init(&ui, fb, 128, 64, NULL, NULL);
+    tm_option home_opts[] = {{.text = "Home"}}, short_opts[] = {{.text = "One"}, {.text = "Two"}};
+    tm_option long_opts[12];
+    for (int i = 0; i < 12; i++) long_opts[i] = (tm_option){.text = "Row"};
+    tm_list_page home, sub;
+    tm_list_page_init(&home, &ui, 1, home_opts, TM_LIST_NORMAL, NULL);
+    tm_list_page_init(&sub, &ui, 12, long_opts, TM_LIST_NORMAL, NULL);
+    tm_jump_to_page(&home, &sub);
+    for (int i = 0; i < 11; i++) tm_menu_move(&sub, 1);
+    for (int i = 0; i < 300 && !ui.is_motionless; i++) tm_ui_proc(&ui, 10);
+    CHECK(sub.select_item == 11 && sub.ind_y_tgt > 0);
+    tm_ui_send(&ui, TM_MSG_RETURN);
+    for (int i = 0; i < 300 && ui.current_page != (tm_page*)&home; i++) tm_ui_proc(&ui, 10);
+
+    tm_list_page_init(&sub, &ui, 2, short_opts, TM_LIST_NORMAL, NULL);
+    CHECK(sub.select_item == 0 && sub.ind_y_tgt == 0);
+    tm_jump_to_page(&home, &sub);
+    for (int i = 0; i < 300 && !(ui.current_page == (tm_page*)&sub && ui.is_motionless); i++)
+        tm_ui_proc(&ui, 10);
+    int n = 0; // the first row's text is on screen
+    for (int y = 0; y < sub.line_h; y++) for (int x = 0; x < 64; x++) n += lit(&ui.fb, x, y);
+    CHECK(n > 0);
+}
+
+/* The grid's boxes are centred on the screen, not left of the scroll bar. */
+static void test_grid_centred(void) {
+    const int sizes[][3] = {{128, 64, 3}, {160, 128, 3}, {96, 64, 2}};
+    for (unsigned s = 0; s < sizeof(sizes) / sizeof(sizes[0]); s++) {
+        static uint8_t fb[160 * 128 / 8];
+        const int w = sizes[s][0], cols = sizes[s][2];
+        tm_ui ui;
+        tm_ui_init(&ui, fb, w, sizes[s][1], NULL, NULL);
+        tm_option opts[9];
+        for (int i = 0; i < 9; i++) opts[i] = (tm_option){.text = "x"};
+        tm_grid_page g;
+        tm_grid_page_init(&g, &ui, 9, opts, 0, NULL); // more than fit: the scroll bar shows
+        CHECK(tm_grid_page_cols(&g) == cols);
+        tm_ui_proc(&ui, 10);
+        const int left = ui.indicator.x.pos_tgt;
+        tm_grid_page_select(&g, cols - 1);
+        tm_ui_proc(&ui, 10);
+        const int right = w - (ui.indicator.x.pos_tgt + ui.indicator.w.pos_tgt);
+        CHECK(left > 0 && (left == right || left == right + 1));
+        CHECK(right > DEFAULT_LIST_BAR_W); // clear of the scroll bar
+    }
+}
+
 int main(void)
 {
     test_expand16();
     test_draw_line();
     test_vertical_clipping();
+    test_horizontal_clipping();
     test_wrap();
     test_text_input();
     test_progress();
     test_msg_axes();
     test_slide();
     test_grid();
+    test_grid_centred();
     test_presets();
     test_menu_page();
     test_list_popup();
     test_chart();
     test_wave();
     test_draw_hook();
+    test_list_reinit();
     if(failures)
         return 1;
     puts("unit checks pass");

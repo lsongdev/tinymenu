@@ -213,7 +213,7 @@ typedef struct tm_ui {
  * @param buf 帧缓冲的存储，tm_fb_size(w, h) 字节，由调用者持有
  * @param w 屏幕宽度(像素)
  * @param h 屏幕高度(像素)
- * @param flush 把帧缓冲中变化的部分交给显示驱动的函数
+ * @param flush 把帧缓冲中变化的部分交给显示驱动的函数；NULL 表示只渲染到帧缓冲
  * @param user 原样传给 flush
  */
 void tm_ui_init(tm_ui* ui, uint8_t* buf, int16_t w, int16_t h, tm_flush_fn flush, void* user);

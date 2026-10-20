@@ -33,8 +33,14 @@ void tm_icon_item_draw(tm_canvas* c, int16_t x, int16_t y, const tm_option* opti
     // Centred under the icon within name_w, kept inside the canvas.
     const int16_t box_w = tm_icon_item_w(icon_w);
     const int16_t room = MAX(name_w, box_w), centre = c->start_x + x + box_w / 2;
-    const int16_t left = MAX(centre - room / 2, c->start_x);
-    const int16_t right = MIN(centre - room / 2 + room, c->start_x + c->w);
+    int16_t left = centre - room / 2;
+    // 图标完整可见时，靠边的名称区域整体往里移而不是被截短(只露出一部分的图标，名称照常截断)
+    if (x >= 0 && x + box_w <= c->w)
+        left = MAX(MIN(left, c->start_x + c->w - room), c->start_x);
+    const int16_t right = MIN(left + room, c->start_x + c->w);
+    left = MAX(left, c->start_x);
+    if (right <= left)
+        return;
     const int16_t text_w = (int16_t)tm_text_width(name, NAME_FONT);
     tm_canvas n = {.fb = c->fb, .start_x = left, .start_y = c->start_y + name_y, .w = right - left,
                    .h = GET_FNOT_H(NAME_FONT)};
