@@ -571,10 +571,54 @@ static void test_draw_hook(void) {
     tm_page_set_draw(&home, NULL);
 }
 
+/* Portrait tracks must use canvas height, including the final pixel. */
+static void test_vertical_clipping(void)
+{
+    enum { W = 128, H = 176 };
+    uint8_t bits[W * ((H + 7) / 8)];
+    tm_fb fb;
+    tm_fb_init(&fb, bits, W, H);
+    tm_fb_set_color(&fb, 1);
+    const int sizes[][2] = {{120, 160}, {120, 64}, {1, 1}};
+    for (unsigned s = 0; s < sizeof(sizes) / sizeof(sizes[0]); s++) {
+        tm_canvas c = {&fb, 3, 5, sizes[s][0], sizes[s][1]};
+        for (int dashed = 0; dashed < 2; dashed++) {
+            tm_fb_clear(&fb);
+            if (dashed) tm_canvas_draw_dashed_line_v(&c, 0, c.h, -2, 0x55, 8);
+            else tm_canvas_draw_line_v(&c, 0, c.h, -2);
+            for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) {
+                bool expected = x == c.start_x && y >= c.start_y && y < c.start_y + c.h;
+                if (dashed) expected = expected && (y - c.start_y) % 2 == 0;
+                CHECK(lit(&fb, x, y) == expected);
+            }
+            tm_fb_clear(&fb);
+            if (dashed) tm_canvas_draw_dashed_line_v(&c, c.w - 1, c.h - 1, c.h - 1, 0xff, 8);
+            else tm_canvas_draw_line_v(&c, c.w - 1, c.h - 1, c.h - 1);
+            CHECK(lit(&fb, c.start_x + c.w - 1, c.start_y + c.h - 1));
+            tm_fb_clear(&fb);
+            const int outside[][3] = {{-1, 0, 2}, {c.w, 0, 2}, {0, -5, -1}, {0, c.h, c.h + 2}};
+            for (unsigned i = 0; i < sizeof(outside) / sizeof(outside[0]); i++) {
+                if (dashed) tm_canvas_draw_dashed_line_v(&c, outside[i][0], outside[i][1], outside[i][2], 0xff, 8);
+                else tm_canvas_draw_line_v(&c, outside[i][0], outside[i][1], outside[i][2]);
+            }
+            for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) CHECK(!lit(&fb, x, y));
+        }
+        /* Exercise the non-byte-sized dashed pattern path as well. */
+        tm_fb_clear(&fb);
+        tm_canvas_draw_dashed_line_v(&c, 0, -2, c.h, 0x05, 3);
+        for (int y = 0; y < H; y++) for (int x = 0; x < W; x++) {
+            bool expected = x == c.start_x && y >= c.start_y && y < c.start_y + c.h;
+            expected = expected && (y - c.start_y) % 3 != 1;
+            CHECK(lit(&fb, x, y) == expected);
+        }
+    }
+}
+
 int main(void)
 {
     test_expand16();
     test_draw_line();
+    test_vertical_clipping();
     test_wrap();
     test_text_input();
     test_progress();

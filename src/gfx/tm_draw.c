@@ -38,27 +38,25 @@ void tm_canvas_write_byte(tm_canvas* canvas, int16_t x, int16_t y, uint8_t val) 
     }
 }
 
-/**
- * @brief : void tm_canvas_draw_line_v(tm_canvas *canvas,int16_t x, int16_t y_start, int16_t y_end)
- * @param : 往指定窗口中画线，注意，y_end 必须大于y_start
- * @attention : None
- */
-void tm_canvas_draw_line_v(tm_canvas* canvas, int16_t x, int16_t y_start, int16_t y_end) {
-    if (y_start < 0)
-        y_start = 0;
-    if (y_end < 0)
-        y_end = 0;
-    if (y_start > canvas->w)
-        y_start = canvas->w;
-    if (y_end > canvas->w)
-        y_end = canvas->w;
-    if (x > canvas->w || x < 0)
-        return;
-    if (y_start > y_end) {
-        int16_t index = y_end;
-        y_end = y_start;
-        y_start = index;
+/* Vertical endpoints are inclusive and relative to the clipping canvas. */
+static bool clip_vertical(const tm_canvas* canvas, int16_t x, int16_t* start, int16_t* end) {
+    if (canvas->h <= 0 || x < 0 || x >= canvas->w)
+        return false;
+    if (*start > *end) {
+        int16_t swap = *start;
+        *start = *end;
+        *end = swap;
     }
+    if (*end < 0 || *start >= canvas->h)
+        return false;
+    if (*start < 0) *start = 0;
+    if (*end >= canvas->h) *end = canvas->h - 1;
+    return true;
+}
+
+void tm_canvas_draw_line_v(tm_canvas* canvas, int16_t x, int16_t y_start, int16_t y_end) {
+    if (!clip_vertical(canvas, x, &y_start, &y_end))
+        return;
     uint8_t n = 0, m = 0;
     if ((y_end - y_start) < 7)
         tm_canvas_write_byte(canvas, x, y_start, ~(0xFF << (y_end - y_start + 1)));
@@ -80,21 +78,8 @@ void tm_canvas_draw_line_v(tm_canvas* canvas, int16_t x, int16_t y_start, int16_
  */
 void tm_canvas_draw_dashed_line_v(tm_canvas* canvas, int16_t x, int16_t y_start, int16_t y_end,
                                    uint8_t DashedStyle, uint8_t Unit_Length) {
-    if (y_start < 0)
-        y_start = 0;
-    if (y_end < 0)
-        y_end = 0;
-    if (y_start > canvas->w)
-        y_start = canvas->w;
-    if (y_end > canvas->w)
-        y_end = canvas->w;
-    if (x > canvas->w || x < 0)
+    if (!clip_vertical(canvas, x, &y_start, &y_end))
         return;
-    if (y_start > y_end) {
-        int16_t index = y_end;
-        y_end = y_start;
-        y_start = index;
-    }
     for (uint8_t i = 0; i < 3; i++) {
         if (Unit_Length == (0x01 << i)) {
             Unit_Length <<= 1;
