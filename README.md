@@ -136,10 +136,14 @@ if (tm_text_input_popup_init(&input, &ui, "Name", name, draft, sizeof(name), NUL
     tm_jump_to_page(&settings, &input);
 ```
 
-It covers the screen: the text, edited at its end, over a grid of keys and a
-row of actions, `Aa` (upper or lower case), `#+` (symbols), `Space`, `Del` and
-`OK`. The grid takes as many columns as fit (ten at most) and rows that share
-the height; on a short screen the rows around the selection show. Up, down,
+It fills the screen but for a small margin, framed over the blurred page: the
+title and length, the text, edited at its end, a grid of keys, and under it a
+fixed row of actions, `Aa` (upper or lower case), `#+` (symbols), `Space`,
+`Del` and `OK`. The grid takes as many columns as fit (ten at most); its rows
+share the height, and when they do not all fit, as many as the screen allows
+show and scroll with the selection between the fixed text and actions. Too
+short for a row of keys and the actions together, the actions scroll with
+the grid. Up, down,
 left and right move over the keys, wrapping, and from the grid to the action
 under it; next and previous go through every key in turn, so two buttons with
 long presses are enough. Click types the selected key. Return cancels, asking
@@ -153,7 +157,7 @@ Each entry reloads the current value; only `OK` writes to `name`, and the
 callback can read `input.result` to tell save from cancel. With unsaved changes
 the title turns into `Back = discard` until another key is pressed. Set
 `input.secret = true` to mask the draft with asterisks. Both buffers, title and
-charset must outlive the popup. It fits screens from 64x23; the demo's
+charset must outlive the popup. It fits screens from 64x31; the demo's
 Network → SSID row opens it.
 
 `tm_digit_popup` edits individual decimal digits and the sign; `tm_value_popup`
@@ -372,7 +376,7 @@ snapshots at 96x64, 128x64, 128x128, 160x80 and 160x128.
 
 | | needs |
 |---|---|
-| text input popup | 64x23 (one row of keys at a time); 128x32 shows one row, 128x64 four |
+| text input popup | 64x31; 128x32 shows one row of keys at a time, 128x64 two rows and the actions |
 | list pages, list popup | any width, 32 px height |
 | wave page | 96x64 |
 | value, message, confirm, progress popups | 96x64 (the message popup scrolls at 32 px) |

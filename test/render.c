@@ -208,21 +208,21 @@ int main(int argc, char **argv)
     keys("nnnnn"); // next along the keys to 'f'
     snapshot("29_text_keys");
     keys("e");     // append 'f'
-    keys("u");     // up from the first row wraps to the action under it: Space
+    keys("pppppu"); // back to 'a'; up from the first row wraps to the action under it, Aa
     snapshot("30_text_actions");
-    keys("re");    // Del removes the 'f'
+    keys("rrre");  // Del removes the 'f'
     keys("lle");   // #+ turns to the symbols
-    keys("de");    // down to the '#' over it, append it
+    keys("nnnne"); // on through Space, Del and OK to the first symbol, '!'
     keys("b");     // unsaved changes: back asks again
     snapshot("31_text_discard");
-    keys("ppp");   // disarm, then back past the first key to OK
+    keys("p");     // disarm; before the first key comes OK
     ui.params.style.animate = false;
     ui.params.style.highlight = TM_HIGHLIGHT_FRAME;
     tm_ui_invalidate(&ui); // a still UI redraws only when told
     run(100);
     snapshot("32_text_save");
     keys("e");
-    if (text.result != TM_TEXT_INPUT_SAVED || strcmp(name, "tinymenu-lab-5G-upstairs#"))
+    if (text.result != TM_TEXT_INPUT_SAVED || strcmp(name, "tinymenu-lab-5G-upstairs!"))
         return 1;
     snapshot("33_text_closed");
     // About -> Check for update: a busy bar, then a download the demo drives from its loop.

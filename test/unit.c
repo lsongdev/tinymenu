@@ -186,7 +186,10 @@ static void test_text_input(void) {
     tm_text_input_popup_select_char(&p, 'a');
     text_key(&p, TM_MSG_UP); // above the first row: the action under it, Aa
     CHECK(p.row == 4 && text_action(&p) == TM_TEXT_INPUT_CASE);
-    CHECK(p.top_row == 1); // four rows fit in 64 px: the first scrolled away
+    CHECK(p.top_row == 0); // the action row stays put under the grid: nothing scrolls
+    text_key(&p, TM_MSG_UP); // into the grid from below: two of its rows fit in 64 px
+    CHECK(p.row == 3 && p.top_row == 2);
+    text_key(&p, TM_MSG_DOWN);
     text_key(&p, TM_MSG_CLICK); // upper case; the selection stays on Aa
     CHECK(p.keys == 1 && text_action(&p) == TM_TEXT_INPUT_CASE);
     text_key(&p, TM_MSG_DOWN); // and wraps back to the first row
