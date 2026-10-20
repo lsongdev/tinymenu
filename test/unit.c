@@ -184,53 +184,49 @@ static void test_text_input(void) {
     CHECK(tm_text_input_popup_backspace(&p) && strcmp(draft, "") == 0);
     CHECK(!tm_text_input_popup_backspace(&p));
 
-    // The built-in pages: lower, upper, digits and symbols, ten keys a row.
+    // The built-in pages: letters with the digits after them, then symbols.
     char name[48] = "tinymenu", scratch[sizeof(name)];
     CHECK(tm_text_input_popup_init(&p, &ui, NULL, name, scratch, sizeof(name), NULL, NULL));
     p.page.methods->in_para_init(&p);
-    CHECK(p.action_n == 6);
-    text_key(&p, TM_MSG_PREV); // the page's keys wrap: 'z'
+    CHECK(p.action_n == 5);
+    text_key(&p, TM_MSG_PREV); // the page's keys wrap: the last digit
     text_key(&p, TM_MSG_CLICK);
-    CHECK(strcmp(scratch, "tinymenuz") == 0 && p.row == 2 && p.col == 5);
-    CHECK(p.top_row == 1); // two rows of keys fit in 64 px over the actions
+    CHECK(strcmp(scratch, "tinymenu9") == 0 && p.row == 3 && p.col == 5);
+    CHECK(p.top_row == 2); // two rows of keys fit in 64 px over the actions
 
     // A d-pad moves over the grid.
     text_key(&p, TM_MSG_UP);
-    CHECK(p.row == 1 && p.col == 5); // over 'z': 'p'
+    CHECK(p.row == 2 && p.col == 5); // over '9': 'z'
     text_key(&p, TM_MSG_RIGHT);
     text_key(&p, TM_MSG_CLICK);
-    CHECK(strcmp(scratch, "tinymenuzq") == 0 && p.col == 6);
+    CHECK(strcmp(scratch, "tinymenu90") == 0 && p.col == 6);
     for (int i = 0; i < 7; i++)
         text_key(&p, TM_MSG_LEFT); // wraps to the row's end
-    CHECK(p.row == 1 && p.col == 9);
+    CHECK(p.row == 2 && p.col == 9);
     tm_text_input_popup_select_char(&p, 'a');
     text_key(&p, TM_MSG_UP); // above the first row: the action under it, Aa
-    CHECK(p.row == 3 && text_action(&p) == TM_TEXT_INPUT_CASE);
-    text_key(&p, TM_MSG_UP); // into the grid from below: its last row, 'u'
-    CHECK(p.row == 2 && p.col == 0 && p.top_row == 1);
+    CHECK(p.row == 4 && text_action(&p) == TM_TEXT_INPUT_CASE);
+    text_key(&p, TM_MSG_UP); // into the grid from below: its short last row, '4'
+    CHECK(p.row == 3 && p.col == 0 && p.top_row == 2);
     text_key(&p, TM_MSG_RETURN);
-    CHECK(p.row == 3 && text_action(&p) == TM_TEXT_INPUT_OK);
+    CHECK(p.row == 4 && text_action(&p) == TM_TEXT_INPUT_OK);
 
     // The pages: each switch goes on typing on that page, from its first key.
     CHECK(tm_text_input_popup_select_action(&p, TM_TEXT_INPUT_CASE));
     text_key(&p, TM_MSG_CLICK);
     CHECK(p.keys == 1 && p.row == 0 && p.col == 0 && p.top_row == 0);
     text_key(&p, TM_MSG_CLICK);
-    CHECK(strcmp(scratch, "tinymenuzqA") == 0);
-    CHECK(tm_text_input_popup_select_action(&p, TM_TEXT_INPUT_DIGITS));
+    text_key(&p, TM_MSG_PREV); // upper case has the digits too
     text_key(&p, TM_MSG_CLICK);
-    CHECK(p.keys == 2);
-    text_key(&p, TM_MSG_PREV); // '9'
-    text_key(&p, TM_MSG_CLICK);
-    CHECK(strcmp(scratch, "tinymenuzqA9") == 0);
+    CHECK(strcmp(scratch, "tinymenu90A9") == 0);
     CHECK(tm_text_input_popup_select_action(&p, TM_TEXT_INPUT_SYMBOLS));
     text_key(&p, TM_MSG_CLICK);
-    CHECK(p.keys == 3);
+    CHECK(p.keys == 2);
     CHECK(tm_text_input_popup_select_char(&p, 'z') && p.keys == 0);
     CHECK(tm_text_input_popup_select_char(&p, ' ') && text_action(&p) == TM_TEXT_INPUT_SPACE);
     text_key(&p, TM_MSG_CLICK);
     CHECK(!tm_text_input_popup_append(&p, '\n'));
-    CHECK(strcmp(scratch, "tinymenuzqA9 ") == 0 && strcmp(name, "tinymenu") == 0);
+    CHECK(strcmp(scratch, "tinymenu90A9 ") == 0 && strcmp(name, "tinymenu") == 0);
     // The built-in pages have every printable character.
     for (char c = ' '; c <= '~'; c++)
         CHECK(tm_text_input_popup_select_char(&p, c));

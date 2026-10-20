@@ -138,23 +138,22 @@ if (tm_text_input_popup_init(&input, &ui, "Name", name, draft, sizeof(name), NUL
 
 It fills the screen but for a small margin, framed over the blurred page: the
 title and length, the text, edited at its end, a grid of keys, and under it a
-fixed row of actions, `Aa` (lower or upper case), `123` (digits), `#+`
-(symbols), `Space`, `Del` and `OK`. Each group of characters is a page of its
-own. The grid takes as many columns as fit (ten at most); when its rows do not
+fixed row of actions, `Aa` (lower or upper case letters, each page with the
+digits after them), `#+` (symbols), `Space`, `Del` and `OK`. The grid takes as many columns as fit (ten at most); when its rows do not
 all fit, as many as the screen allows show and scroll between the fixed text
 and actions (too short for both, the actions scroll with the grid).
 
 Next and previous go along the page's keys (two buttons), up, down, left and
 right move over them (a d-pad), both wrapping; click types the selected key.
 Return goes to the actions, on `OK`: next/previous or left/right move along
-them, and next or previous past either end goes back to the keys. `Aa`, `123`
-and `#+` turn to their page and go on typing, `Space` types a space and goes
+them, and next or previous past either end goes back to the keys. `Aa` and
+`#+` turn to their page and go on typing, `Space` types a space and goes
 back to the keys, `Del` deletes the last character and stays. Return there
 cancels, asking for a second return when there are unsaved changes.
 
 Pass a charset to limit the keys, such as `"0123456789"` for a PIN: its
-characters make one page, without `Aa`, `123` and `#+`, and `Space` only when
-it has a space.
+characters make one page, without `Aa` and `#+`, and `Space` only when it has
+a space.
 
 Each entry reloads the current value; only `OK` writes to `name`, and the
 callback can read `input.result` to tell save from cancel. With unsaved changes

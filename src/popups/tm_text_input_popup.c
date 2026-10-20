@@ -14,19 +14,19 @@
 #define KEY_MIN_W 10
 #define MAX_COLS 10
 
-/* The built-in pages, each a group of its own. */
-enum { PAGE_LOWER, PAGE_UPPER, PAGE_DIGITS, PAGE_SYMBOLS, PAGE_COUNT };
+/* The built-in pages: the letters in either case, with the digits after them,
+ * and the symbols. */
+enum { PAGE_LOWER, PAGE_UPPER, PAGE_SYMBOLS, PAGE_COUNT };
 static const char* const PAGES[PAGE_COUNT] = {
-    "abcdefghijklmnopqrstuvwxyz",
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-    "0123456789",
+    "abcdefghijklmnopqrstuvwxyz0123456789",
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
     "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
 };
 /* The action labels, shorter and shorter for narrower screens. */
 static const char* const LABELS[][TM_TEXT_INPUT_ACTIONS] = {
-    {"Aa", "123", "#+", "Space", "Del", "OK"},
-    {"Aa", "123", "#+", "Spc", "Del", "OK"},
-    {"Aa", "12", "#", "_", "<", "OK"},
+    {"Aa", "#+", "Space", "Del", "OK"},
+    {"Aa", "#+", "Spc", "Del", "OK"},
+    {"Aa", "#", "_", "<", "OK"},
 };
 #define LABEL_SETS (sizeof(LABELS) / sizeof(LABELS[0]))
 
@@ -177,7 +177,6 @@ static void set_actions(tm_text_input_popup* p) {
     p->action_n = 0;
     if (!p->charset) {
         p->actions[p->action_n++] = TM_TEXT_INPUT_CASE;
-        p->actions[p->action_n++] = TM_TEXT_INPUT_DIGITS;
         p->actions[p->action_n++] = TM_TEXT_INPUT_SYMBOLS;
     }
     if (!p->charset || strchr(p->charset, ' '))
@@ -422,7 +421,6 @@ bool tm_text_input_popup_activate(tm_text_input_popup* p) {
     }
     switch ((tm_text_input_action)p->actions[p->col]) {
     case TM_TEXT_INPUT_CASE: turn(p, p->keys == PAGE_LOWER ? PAGE_UPPER : PAGE_LOWER); break;
-    case TM_TEXT_INPUT_DIGITS: turn(p, PAGE_DIGITS); break;
     case TM_TEXT_INPUT_SYMBOLS: turn(p, PAGE_SYMBOLS); break;
     case TM_TEXT_INPUT_SPACE: // and back to typing
         tm_text_input_popup_append(p, ' ');

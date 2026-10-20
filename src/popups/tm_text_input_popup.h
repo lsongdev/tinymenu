@@ -10,7 +10,6 @@ extern "C" {
 /* The keys of the bottom row, under the character grid. */
 typedef enum {
     TM_TEXT_INPUT_CASE,      /* "Aa": lower <-> upper case letters (default charset only) */
-    TM_TEXT_INPUT_DIGITS,    /* "123": the digits (default charset only) */
     TM_TEXT_INPUT_SYMBOLS,   /* "#+": the symbols (default charset only) */
     TM_TEXT_INPUT_SPACE,     /* append a space and go on typing (when the charset has one) */
     TM_TEXT_INPUT_BACKSPACE, /* delete the last character */
@@ -32,7 +31,7 @@ typedef struct {
     size_t capacity;
     const char* charset; /* NULL: the built-in pages */
     size_t length;
-    uint8_t keys;    /* page of keys shown: 0 lower, 1 upper, 2 digits, 3 symbols */
+    uint8_t keys;    /* page of keys shown: 0 lower, 1 upper (with digits), 2 symbols */
     uint8_t row;     /* selected row; the grid's rows, then the action row */
     uint8_t col;     /* selected column, or action in the action row */
     uint8_t top_row; /* first row of the grid on screen when they do not all fit */
@@ -50,15 +49,15 @@ typedef struct {
  * non-overlapping arrays of capacity bytes, kept alive with title and charset
  * for the popup's lifetime. buffer must contain a NUL-terminated printable
  * ASCII string. charset is a nonempty printable ASCII string whose characters
- * (a space becomes the Space key) are the only keys; NULL gives four pages:
- * lower case, upper case, digits and symbols.
+ * (a space becomes the Space key) are the only keys; NULL gives three pages:
+ * lower case and upper case letters, each with the digits, and symbols.
  * Returns false for invalid arguments; popup is left untouched.
  * Each entry copies buffer into draft. Only OK writes back to buffer.
  *
  * Next/prev go along the page's keys (two buttons), up/down/left/right move
  * over them (a d-pad), both wrapping; click types the key. Return goes to the
  * actions, on OK: next/prev or left/right move along them (next/prev past
- * either end go back to the keys) and click acts: Aa, 123 and #+ turn to their
+ * either end go back to the keys) and click acts: Aa and #+ turn to their
  * page and go on typing, Space types a space and goes back to the keys, Del
  * deletes the last character. Return there cancels; with unsaved changes it
  * asks for a second return first. Callbacks see result after processing.
