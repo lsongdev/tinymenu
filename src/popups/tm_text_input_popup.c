@@ -3,14 +3,21 @@
 #include "popups/tm_text_input_popup.h"
 #include "core/tm_ui.h"
 
-/* Three 8px rows with room for the border, including on 96x32 displays. */
-#define TEXT_H 32
-#define TEXT_CELL 6  /* text row: Font_6_8 cells, the cursor between them */
-#define STRIP_CELL 8 /* strip: wider cells so the selection stands apart */
-#define TEXT_Y 12
-#define STRIP_Y 22
-static const char DEFAULT_CHARSET[] =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 -_.";
+#define FONT Font_6_8
+#define CHAR_W 6    /* a Font_6_8 cell; the glyph is 5 px wide */
+#define HEAD_H 10   /* title and count, when the screen is tall enough for them */
+#define BOX_H 12    /* the text, framed */
+#define KEY_MIN_H 10
+#define KEY_MIN_W 10
+#define MAX_COLS 10
+
+/* The built-in pages: letters with digits in both cases, then symbols. */
+static const char* const PAGES[] = {
+    "abcdefghijklmnopqrstuvwxyz0123456789-_.@",
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_.@",
+    "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
+};
+static const char* const LABELS[TM_TEXT_INPUT_ACTIONS] = {"Aa", "#+", "Space", "Del", "OK"};
 
 static bool printable(const char* text, size_t capacity, size_t* length) {
     for (size_t i = 0; i < capacity; i++) {
@@ -25,126 +32,169 @@ static bool printable(const char* text, size_t capacity, size_t* length) {
     return false;
 }
 
-static int16_t popup_width(const tm_text_input_popup* p) {
-    return MIN(160, p->page.ui->fb.w - 4);
+//------- The keys: the page's characters (a charset's spaces are the Space key)
+static const char* page_chars(const tm_text_input_popup* p) {
+    return p->charset ? p->charset : PAGES[p->keys];
+}
+static size_t key_count(const tm_text_input_popup* p) {
+    size_t n = 0;
+    for (const char* s = page_chars(p); *s; s++)
+        n += *s != ' ';
+    return n;
+}
+static char key_char(const tm_text_input_popup* p, size_t index) {
+    for (const char* s = page_chars(p); *s; s++)
+        if (*s != ' ' && index-- == 0)
+            return *s;
+    return 0;
+}
+static bool allowed(const tm_text_input_popup* p, char c) {
+    if (p->charset)
+        return c && strchr(p->charset, c);
+    if (c == ' ')
+        return true;
+    for (size_t i = 0; i < sizeof(PAGES) / sizeof(PAGES[0]); i++)
+        if (c && strchr(PAGES[i], c))
+            return true;
+    return false;
 }
 
-/* Width inside the border and padding. */
-static int16_t inner_width(const tm_text_input_popup* p) {
-    return popup_width(p) - 6;
+//------- Layout, from the screen size
+static int16_t screen_w(const tm_text_input_popup* p) { return p->page.ui->fb.w; }
+static int16_t screen_h(const tm_text_input_popup* p) { return p->page.ui->fb.h; }
+static uint8_t cols(const tm_text_input_popup* p) {
+    return (uint8_t)MAX(MIN(MAX_COLS, screen_w(p) / KEY_MIN_W), 1);
+}
+static uint8_t grid_rows(const tm_text_input_popup* p) {
+    return (uint8_t)((key_count(p) + cols(p) - 1) / cols(p));
+}
+static uint8_t rows(const tm_text_input_popup* p) { return grid_rows(p) + 1; } /* + actions */
+static int16_t head_h(const tm_text_input_popup* p) { return screen_h(p) >= 48 ? HEAD_H : 0; }
+static int16_t keys_top(const tm_text_input_popup* p) { return head_h(p) + BOX_H + 1; }
+/* Rows share the room under the text; when that makes them too short, fewer show. */
+static int16_t key_h(const tm_text_input_popup* p) {
+    return MAX((screen_h(p) - keys_top(p)) / rows(p), KEY_MIN_H);
+}
+static uint8_t visible_rows(const tm_text_input_popup* p) {
+    return (uint8_t)MAX(MIN((screen_h(p) - keys_top(p)) / key_h(p), rows(p)), 1);
+}
+/* Characters in a grid row (the last may be short). */
+static uint8_t row_len(const tm_text_input_popup* p, uint8_t row) {
+    if (row >= grid_rows(p))
+        return p->action_n;
+    return (uint8_t)MIN((size_t)cols(p), key_count(p) - (size_t)row * cols(p));
 }
 
-/* Characters the text row shows; the cursor may also sit just after the last. */
-static size_t text_slots(const tm_text_input_popup* p) {
-    return (size_t)(inner_width(p) - 1) / TEXT_CELL;
-}
-
-static size_t strip_items(const tm_text_input_popup* p) {
-    return p->charset_len + TM_TEXT_INPUT_ACTIONS;
-}
-
-/* An odd number of strip cells, so the selection sits in the middle. */
-static size_t strip_slots(const tm_text_input_popup* p) {
-    size_t n = MIN((size_t)inner_width(p) / STRIP_CELL, strip_items(p));
-    return n & 1 ? n : n - 1;
-}
-
-static int16_t strip_left(const tm_text_input_popup* p) {
-    return (int16_t)((inner_width(p) - (int16_t)strip_slots(p) * STRIP_CELL) / 2);
-}
-
-/* Keeps the cursor in view without leaving blank cells after the text. */
-static void clamp_scroll(tm_text_input_popup* p) {
-    size_t slots = text_slots(p);
-    if (p->cursor < p->first_visible)
-        p->first_visible = p->cursor;
-    if (p->cursor - p->first_visible > slots)
-        p->first_visible = p->cursor - slots;
-    if (p->length - p->first_visible < slots)
-        p->first_visible = p->length > slots ? p->length - slots : 0;
-}
-
-/* Action icons and the space, drawn in a 5x7 cell. */
-static void draw_symbol(tm_canvas* c, int16_t x, int16_t y, size_t item, size_t charset_len) {
-    if (item >= charset_len) {
-        switch ((tm_text_input_action)(item - charset_len)) {
-        case TM_TEXT_INPUT_OK:
-            tm_canvas_draw_line(c, x, y + 3, x + 2, y + 5);
-            tm_canvas_draw_line(c, x + 2, y + 5, x + 4, y + 1);
-            break;
-        case TM_TEXT_INPUT_LEFT:
-        case TM_TEXT_INPUT_RIGHT:
-            for (int16_t i = 0; i < 4; i++) {
-                int16_t col = item - charset_len == TM_TEXT_INPUT_LEFT ? x + 1 + i : x + 4 - i;
-                tm_canvas_draw_line_v(c, col, y + 3 - i, y + 3 + i);
-            }
-            break;
-        case TM_TEXT_INPUT_BACKSPACE:
-            tm_canvas_draw_line_h(c, x, x + 4, y + 3);
-            tm_canvas_draw_line(c, x, y + 3, x + 2, y + 1);
-            tm_canvas_draw_line(c, x, y + 3, x + 2, y + 5);
-            break;
-        default: break;
-        }
-    } else {
-        tm_canvas_draw_line_h(c, x, x + 4, y + 6);
-        tm_canvas_draw_point(c, x, y + 5);
-        tm_canvas_draw_point(c, x + 4, y + 5);
+/* Left edge and width of a key; actions get their label's width and a share of the rest. */
+static void key_x(const tm_text_input_popup* p, uint8_t row, uint8_t col, int16_t* x, int16_t* w) {
+    const int16_t sw = screen_w(p);
+    if (row < grid_rows(p)) {
+        *x = (int16_t)(col * sw / cols(p));
+        *w = (int16_t)((col + 1) * sw / cols(p)) - *x;
+        return;
+    }
+    int16_t labels = 0;
+    for (uint8_t i = 0; i < p->action_n; i++)
+        labels += (int16_t)tm_text_width(LABELS[p->actions[i]], FONT);
+    const int16_t extra = (sw - labels) / p->action_n;
+    *x = 0;
+    for (uint8_t i = 0;; i++) {
+        *w = i == p->action_n - 1 ? sw - *x
+                                  : (int16_t)tm_text_width(LABELS[p->actions[i]], FONT) + extra;
+        if (i == col)
+            return;
+        *x += *w;
     }
 }
 
+/* Keeps the selected row on screen. */
+static void follow(tm_text_input_popup* p) {
+    const uint8_t shown = visible_rows(p);
+    if (p->row < p->top_row)
+        p->top_row = p->row;
+    if (p->row >= p->top_row + shown)
+        p->top_row = p->row - shown + 1;
+    if (p->top_row + shown > rows(p))
+        p->top_row = rows(p) - shown;
+}
+
+static void set_actions(tm_text_input_popup* p) {
+    p->action_n = 0;
+    if (!p->charset) {
+        p->actions[p->action_n++] = TM_TEXT_INPUT_CASE;
+        p->actions[p->action_n++] = TM_TEXT_INPUT_SYMBOLS;
+    }
+    if (!p->charset || strchr(p->charset, ' '))
+        p->actions[p->action_n++] = TM_TEXT_INPUT_SPACE;
+    p->actions[p->action_n++] = TM_TEXT_INPUT_BACKSPACE;
+    p->actions[p->action_n++] = TM_TEXT_INPUT_OK;
+}
+
+//------- Drawing
 static void draw(tm_text_input_popup* p) {
     tm_ui* ui = p->page.ui;
-    int16_t w = popup_width(p), x = (ui->fb.w - w) / 2;
-    int16_t y = p->win_y.pos_cur;
+    const int16_t sw = screen_w(p), y0 = p->win_y.pos_cur;
     tm_fb_set_color(&ui->fb, TM_PEN_BLACK);
-    tm_canvas_draw_rbox(&ui->w_all, x, y, w, TEXT_H, tm_ui_radius(ui, 2));
+    tm_canvas_draw_rbox(&ui->w_all, 0, y0, sw, screen_h(p), 0);
     tm_fb_set_color(&ui->fb, TM_PEN_WHITE);
-    tm_canvas_draw_rbox_empty(&ui->w_all, x, y, w, TEXT_H, tm_ui_radius(ui, 2));
-    tm_canvas c = {.fb = &ui->fb, .start_x = x + 3, .start_y = y + 2,
-                   .w = inner_width(p), .h = 8};
+    tm_canvas c = {.fb = &ui->fb, .start_x = 1, .start_y = y0, .w = sw - 2, .h = 8};
 
-    /* Title and length, or the discard prompt. */
-    if (p->discard_armed) {
-        tm_canvas_draw_str(&c, 0, 0, Font_6_8, "Back = discard");
+    /* Title and length, or the discard prompt (in the text box on short screens). */
+    char count[12];
+    snprintf(count, sizeof(count), "%u/%u", (unsigned)p->length, (unsigned)(p->capacity - 1));
+    if (head_h(p)) {
+        if (p->discard_armed) {
+            tm_canvas_draw_str(&c, 0, 0, FONT, "Back = discard");
+        } else {
+            const int16_t count_w = (int16_t)tm_text_width(count, FONT);
+            tm_canvas_draw_str(&c, c.w - count_w, 0, FONT, count);
+            tm_canvas title = c;
+            title.w = c.w - count_w - CHAR_W;
+            tm_canvas_draw_str(&title, 0, 0, FONT, p->title);
+        }
+    }
+
+    /* The text's end with the cursor after it. */
+    const int16_t box_y = y0 + head_h(p);
+    tm_canvas_draw_rbox_empty(&ui->w_all, 0, box_y, sw, BOX_H, tm_ui_radius(ui, 2));
+    c = (tm_canvas){.fb = &ui->fb, .start_x = 4, .start_y = box_y + 2, .w = sw - 8, .h = 8};
+    if (p->discard_armed && !head_h(p)) {
+        tm_canvas_draw_str(&c, 0, 0, FONT, "Back = discard");
     } else {
-        char count[12];
-        snprintf(count, sizeof(count), "%u/%u", (unsigned)p->length, (unsigned)(p->capacity - 1));
-        int16_t count_w = (int16_t)tm_text_width(count, Font_6_8);
-        tm_canvas_draw_str(&c, c.w - count_w, 0, Font_6_8, count);
-        tm_canvas title = c;
-        title.w = c.w - count_w - TEXT_CELL;
-        tm_canvas_draw_str(&title, 0, 0, Font_6_8, p->title);
+        const size_t slots = (size_t)(c.w - 2) / CHAR_W; /* and the cursor after them */
+        const size_t first = p->length > slots ? p->length - slots : 0;
+        for (size_t i = first; i < p->length; i++)
+            tm_canvas_draw_char(&c, (int16_t)((i - first) * CHAR_W), 0, FONT,
+                                p->secret ? '*' : p->draft[i]);
+        tm_canvas_draw_line_v(&c, (int16_t)((p->length - first) * CHAR_W), 0, 7);
+        if (first)
+            tm_canvas_draw_point(&ui->w_all, 1, box_y + BOX_H / 2);
     }
 
-    /* Text with the cursor between characters; text starts 1px in for it. */
-    c.start_y = y + TEXT_Y - 1;
-    c.h = 10;
-    size_t slots = text_slots(p);
-    for (size_t i = 0; i < slots && p->first_visible + i < p->length; i++)
-        tm_canvas_draw_char(&c, (int16_t)(1 + i * TEXT_CELL), 1, Font_6_8,
-                            p->secret ? '*' : p->draft[p->first_visible + i]);
-    tm_canvas_draw_line_v(&c, (int16_t)((p->cursor - p->first_visible) * TEXT_CELL), 0, 9);
-    if (p->first_visible)
-        tm_canvas_draw_point(&c, 0, 9);
-    if (p->length - p->first_visible > slots)
-        tm_canvas_draw_point(&c, c.w - 1, 9);
-
-    /* The strip, centred on the selection. */
-    c.start_y = y + STRIP_Y;
-    c.h = 8;
-    size_t n = strip_items(p), shown = strip_slots(p);
-    int16_t left = strip_left(p);
-    for (size_t i = 0; i < shown; i++) {
-        size_t item = (p->selected + n - shown / 2 + i) % n;
-        int16_t cx = left + (int16_t)(i * STRIP_CELL) + 1;
-        if (item < p->charset_len && p->charset[item] != ' ')
-            tm_canvas_draw_char(&c, cx, 0, Font_6_8, p->charset[item]);
-        else
-            draw_symbol(&c, cx, 0, item, p->charset_len);
+    /* The keys on screen. */
+    const int16_t kh = key_h(p), top = y0 + keys_top(p);
+    for (uint8_t r = p->top_row; r < p->top_row + visible_rows(p); r++) {
+        const int16_t ky = top + (r - p->top_row) * kh;
+        for (uint8_t k = 0; k < row_len(p, r); k++) {
+            int16_t kx, kw;
+            key_x(p, r, k, &kx, &kw);
+            if (r < grid_rows(p)) {
+                tm_canvas_draw_char(&ui->w_all, kx + (kw - (CHAR_W - 1)) / 2, ky + (kh - 8) / 2, FONT,
+                                    key_char(p, (size_t)r * cols(p) + k));
+            } else {
+                const char* label = LABELS[p->actions[k]];
+                tm_canvas_draw_str(&ui->w_all, kx + (kw - (int16_t)tm_text_width(label, FONT)) / 2,
+                                   ky + (kh - 8) / 2, FONT, label);
+            }
+        }
     }
+    if (p->top_row) // more rows above / below: a dot at the edge
+        tm_canvas_draw_point(&ui->w_all, sw - 1, top);
+    if (p->top_row + visible_rows(p) < rows(p))
+        tm_canvas_draw_point(&ui->w_all, sw - 1, top + visible_rows(p) * kh - 1);
 }
 
+//------- Page methods
 static void entry(tm_page_addr addr) {
     tm_text_input_popup* p = addr;
     size_t length;
@@ -155,14 +205,13 @@ static void entry(tm_page_addr addr) {
     } else {
         memcpy(p->draft, p->buffer, length + 1);
     }
-    p->length = p->cursor = length;
-    p->first_visible = 0;
-    p->selected = 0;
+    p->length = length;
+    p->keys = 0;
+    p->row = p->col = p->top_row = 0;
     p->discard_armed = false;
     p->result = TM_TEXT_INPUT_EDITING;
-    clamp_scroll(p);
-    p->win_y.pos_cur = -TEXT_H;
-    p->win_y.pos_tgt = (p->page.ui->fb.h - TEXT_H) / 2;
+    p->win_y.pos_cur = screen_h(p);
+    p->win_y.pos_tgt = 0;
     p->page.ui->win_bg_blur = p->page.ui->params.winbgblur_param[TM_POPUP_BLUR_TEXT_INPUT];
 }
 
@@ -175,60 +224,100 @@ static bool transition(tm_page_addr addr) {
 }
 
 static void show(tm_page_addr addr) {
-    tm_text_input_popup* p = addr;
-    tm_ui* ui = p->page.ui;
-    tm_page* bg = p->page.last_page;
-    if (bg != &p->page)
-        tm_page_show(bg);
-    tm_fb_set_color(&ui->fb, TM_PEN_BLACK);
-    tm_fb_blur(&ui->fb, ui->win_bg_blur);
-    tm_fb_set_color(&ui->fb, TM_PEN_WHITE);
-    draw(p);
+    draw(addr); // covers the whole screen: no background to show
 }
 
-void tm_text_input_popup_select(tm_text_input_popup* p, bool next) {
-    size_t n = strip_items(p);
-    p->selected = (p->selected + (next ? 1 : n - 1)) % n;
+//------- Selection
+void tm_text_input_popup_move(tm_text_input_popup* p, int8_t dr, int8_t dc) {
+    if (dr) {
+        int16_t x, w;
+        key_x(p, p->row, p->col, &x, &w);
+        const int16_t centre = x + w / 2; // the key under (or over) this one
+        p->row = (uint8_t)((p->row + rows(p) + dr % rows(p)) % rows(p));
+        p->col = 0;
+        for (uint8_t k = 0; k < row_len(p, p->row); k++) {
+            key_x(p, p->row, k, &x, &w);
+            if (centre >= x)
+                p->col = k;
+        }
+    }
+    if (dc) {
+        const uint8_t n = row_len(p, p->row);
+        p->col = (uint8_t)((p->col + n + dc % n) % n);
+    }
+    follow(p);
+}
+
+void tm_text_input_popup_step(tm_text_input_popup* p, bool next) {
+    const size_t keys = key_count(p), n = keys + p->action_n;
+    size_t at = p->row < grid_rows(p) ? (size_t)p->row * cols(p) + p->col : keys + p->col;
+    at = (at + (next ? 1 : n - 1)) % n;
+    if (at < keys) {
+        p->row = (uint8_t)(at / cols(p));
+        p->col = (uint8_t)(at % cols(p));
+    } else {
+        p->row = grid_rows(p);
+        p->col = (uint8_t)(at - keys);
+    }
+    follow(p);
+}
+
+bool tm_text_input_popup_select_action(tm_text_input_popup* p, tm_text_input_action action) {
+    for (uint8_t i = 0; i < p->action_n; i++)
+        if (p->actions[i] == action) {
+            p->row = grid_rows(p);
+            p->col = i;
+            follow(p);
+            return true;
+        }
+    return false;
 }
 
 bool tm_text_input_popup_select_char(tm_text_input_popup* p, char character) {
-    const char* at = character ? strchr(p->charset, character) : NULL;
-    if (!at)
-        return false;
-    p->selected = (size_t)(at - p->charset);
-    return true;
+    if (character == ' ')
+        return tm_text_input_popup_select_action(p, TM_TEXT_INPUT_SPACE);
+    const uint8_t pages = p->charset ? 1 : sizeof(PAGES) / sizeof(PAGES[0]);
+    const uint8_t from = p->keys;
+    for (uint8_t i = 0; i < pages; i++) {
+        p->keys = (uint8_t)((from + i) % pages); // the page shown first, if it has it
+        for (size_t k = 0; k < key_count(p); k++)
+            if (key_char(p, k) == character) {
+                p->row = (uint8_t)(k / cols(p));
+                p->col = (uint8_t)(k % cols(p));
+                p->top_row = MIN(p->top_row, rows(p) - 1);
+                follow(p);
+                return true;
+            }
+    }
+    p->keys = from;
+    return false;
 }
 
-void tm_text_input_popup_select_action(tm_text_input_popup* p, tm_text_input_action action) {
-    if (action < TM_TEXT_INPUT_ACTIONS)
-        p->selected = p->charset_len + action;
+/* Turns to another page; the selection stays where it was, inside the new grid. */
+static void turn(tm_text_input_popup* p, uint8_t keys) {
+    const bool on_actions = p->row >= grid_rows(p);
+    p->keys = keys;
+    if (on_actions)
+        p->row = grid_rows(p);
+    else if (p->row >= grid_rows(p) || p->col >= row_len(p, p->row))
+        p->row = grid_rows(p) - 1, p->col = row_len(p, p->row) - 1;
+    p->top_row = MIN(p->top_row, rows(p) - 1);
+    follow(p);
 }
 
-bool tm_text_input_popup_move_cursor(tm_text_input_popup* p, bool right) {
-    if (right ? p->cursor >= p->length : p->cursor == 0)
+//------- Editing
+bool tm_text_input_popup_append(tm_text_input_popup* p, char character) {
+    if (p->length >= p->capacity - 1 || !allowed(p, character))
         return false;
-    p->cursor += right ? 1 : (size_t)-1;
-    clamp_scroll(p);
-    return true;
-}
-
-bool tm_text_input_popup_insert(tm_text_input_popup* p, char character) {
-    if (p->length >= p->capacity - 1 || !character || !strchr(p->charset, character))
-        return false;
-    memmove(p->draft + p->cursor + 1, p->draft + p->cursor, p->length - p->cursor + 1);
-    p->draft[p->cursor++] = character;
-    p->length++;
-    clamp_scroll(p);
+    p->draft[p->length++] = character;
+    p->draft[p->length] = '\0';
     return true;
 }
 
 bool tm_text_input_popup_backspace(tm_text_input_popup* p) {
-    if (!p->cursor)
+    if (!p->length)
         return false;
-    p->cursor--;
-    memmove(p->draft + p->cursor, p->draft + p->cursor + 1, p->length - p->cursor);
-    p->length--;
-    clamp_scroll(p);
+    p->draft[--p->length] = '\0';
     return true;
 }
 
@@ -237,20 +326,21 @@ void tm_text_input_popup_finish(tm_text_input_popup* p, bool save) {
         memcpy(p->buffer, p->draft, p->length + 1);
     p->result = save ? TM_TEXT_INPUT_SAVED : TM_TEXT_INPUT_CANCELLED;
     p->discard_armed = false;
-    p->win_y.pos_tgt = -TEXT_H;
+    p->win_y.pos_tgt = screen_h(p);
     tm_page_return(p);
 }
 
 bool tm_text_input_popup_activate(tm_text_input_popup* p) {
-    if (p->selected < p->charset_len) {
-        tm_text_input_popup_insert(p, p->charset[p->selected]);
+    if (p->row < grid_rows(p)) {
+        tm_text_input_popup_append(p, key_char(p, (size_t)p->row * cols(p) + p->col));
         return false;
     }
-    switch ((tm_text_input_action)(p->selected - p->charset_len)) {
-    case TM_TEXT_INPUT_OK: tm_text_input_popup_finish(p, true); return true;
-    case TM_TEXT_INPUT_LEFT: tm_text_input_popup_move_cursor(p, false); break;
-    case TM_TEXT_INPUT_RIGHT: tm_text_input_popup_move_cursor(p, true); break;
+    switch ((tm_text_input_action)p->actions[p->col]) {
+    case TM_TEXT_INPUT_CASE: turn(p, p->keys == 0 ? 1 : 0); break;
+    case TM_TEXT_INPUT_SYMBOLS: turn(p, p->keys == 2 ? 0 : 2); break;
+    case TM_TEXT_INPUT_SPACE: tm_text_input_popup_append(p, ' '); break;
     case TM_TEXT_INPUT_BACKSPACE: tm_text_input_popup_backspace(p); break;
+    case TM_TEXT_INPUT_OK: tm_text_input_popup_finish(p, true); return true;
     default: break;
     }
     return false;
@@ -269,21 +359,23 @@ static bool react(tm_page_addr addr) {
         bool armed = p->discard_armed;
         if (msg != TM_MSG_NONE)
             p->discard_armed = false;
-        if (msg == TM_MSG_PREV || msg == TM_MSG_NEXT) {
-            tm_text_input_popup_select(p, msg == TM_MSG_NEXT);
-        } else if (msg == TM_MSG_UP || msg == TM_MSG_DOWN) { // like a wheel: up is the next
-            tm_text_input_popup_select(p, msg == TM_MSG_UP);
-        } else if (msg == TM_MSG_LEFT || msg == TM_MSG_RIGHT) {
-            tm_text_input_popup_move_cursor(p, msg == TM_MSG_RIGHT);
-        } else if (msg == TM_MSG_CLICK) {
-            done = tm_text_input_popup_activate(p);
-        } else if (msg == TM_MSG_RETURN) {
+        switch (msg) {
+        case TM_MSG_PREV:
+        case TM_MSG_NEXT: tm_text_input_popup_step(p, msg == TM_MSG_NEXT); break;
+        case TM_MSG_UP:
+        case TM_MSG_DOWN: tm_text_input_popup_move(p, msg == TM_MSG_DOWN ? 1 : -1, 0); break;
+        case TM_MSG_LEFT:
+        case TM_MSG_RIGHT: tm_text_input_popup_move(p, 0, msg == TM_MSG_RIGHT ? 1 : -1); break;
+        case TM_MSG_CLICK: done = tm_text_input_popup_activate(p); break;
+        case TM_MSG_RETURN:
             if (armed || !changed(p)) {
                 tm_text_input_popup_finish(p, false);
                 done = true;
             } else {
                 p->discard_armed = true;
             }
+            break;
+        default: break;
         }
         if (msg != TM_MSG_NONE && p->page.cb)
             p->page.cb(&p->page, msg);
@@ -298,13 +390,13 @@ static bool react(tm_page_addr addr) {
 static void indicator(tm_page_addr addr) {
     tm_text_input_popup* p = addr;
     tm_ui* ui = p->page.ui;
-    int16_t x = (ui->fb.w - popup_width(p)) / 2 + 3;
-    int16_t y = (ui->fb.h - TEXT_H) / 2;
-    ui->indicator.x.pos_tgt = x + strip_left(p) + (int16_t)(strip_slots(p) / 2 * STRIP_CELL);
-    ui->indicator.y.pos_tgt = y + STRIP_Y - 1;
-    ui->indicator.w.pos_tgt = STRIP_CELL - 1;
-    ui->indicator.h.pos_tgt = 9;
-    tm_ui_draw_highlight(ui, 1);
+    int16_t x, w;
+    key_x(p, p->row, p->col, &x, &w);
+    ui->indicator.x.pos_tgt = x + 1;
+    ui->indicator.y.pos_tgt = p->win_y.pos_tgt + keys_top(p) + (p->row - p->top_row) * key_h(p);
+    ui->indicator.w.pos_tgt = w - 2;
+    ui->indicator.h.pos_tgt = key_h(p) - 1;
+    tm_ui_draw_highlight(ui, 2);
 }
 
 static const tm_page_methods methods = {
@@ -316,14 +408,13 @@ bool tm_text_input_popup_init(tm_text_input_popup* p, tm_ui* ui,
                               const char* title, char* buffer, char* draft,
                               size_t capacity, const char* charset, tm_page_cb cb) {
     size_t length, charset_len;
-    if (!p || !ui || !buffer || !draft || !capacity || ui->fb.w < 96 || ui->fb.h < TEXT_H)
+    if (!p || !ui || !buffer || !draft || !capacity || ui->fb.w < 64 ||
+        ui->fb.h < BOX_H + 1 + KEY_MIN_H)
         return false;
     uintptr_t a = (uintptr_t)buffer, b = (uintptr_t)draft;
     if ((a <= b ? b - a : a - b) < capacity || !printable(buffer, capacity, &length))
         return false;
-    if (!charset)
-        charset = DEFAULT_CHARSET;
-    if (!printable(charset, strlen(charset) + 1, &charset_len) || !charset_len)
+    if (charset && (!printable(charset, strlen(charset) + 1, &charset_len) || !charset_len))
         return false;
     memset(p, 0, sizeof(*p));
     p->page.page_type = TM_PAGE_TEXT_INPUT_POPUP;
@@ -334,11 +425,10 @@ bool tm_text_input_popup_init(tm_text_input_popup* p, tm_ui* ui,
     p->draft = draft;
     p->capacity = capacity;
     p->charset = charset;
-    p->charset_len = charset_len;
     p->result = TM_TEXT_INPUT_EDITING;
+    set_actions(p);
     /* Make editing helpers usable immediately, as well as after entry. */
     memcpy(draft, buffer, length + 1);
-    p->length = p->cursor = length;
-    clamp_scroll(p);
+    p->length = length;
     return true;
 }

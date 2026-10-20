@@ -102,7 +102,7 @@ right and up forward, left and down back.
 | value popup | lower / raise | up and right raise, down and left lower |
 | digit popup | pick a digit; click, then change it | left/right pick, up/down change at once |
 | confirm popup | scroll the text, then switch button | up/down scroll, left/right switch |
-| text input | move along the strip | up/down turn the strip, left/right move the cursor |
+| text input | every key in turn, then the actions | move over the grid of keys, wrapping |
 | message popup | scroll | up/down scroll |
 
 `tm_msg_step()` (-1/+1 down a list) and `tm_msg_amount()` (-1/+1 for a value,
@@ -136,26 +136,25 @@ if (tm_text_input_popup_init(&input, &ui, "Name", name, draft, sizeof(name), NUL
     tm_jump_to_page(&settings, &input);
 ```
 
-It needs only next, previous, click and return, so two buttons with long
-presses are enough. The bottom row is a strip centred on the selection: `next`
-and `prev` move along it (on a d-pad, `up` and `down` turn it, up being the next), and `click` inserts the selected character at the
-cursor. The strip is a ring, and between its last character and its first sit
-the actions `✓` (save), `◀` `▶` (move the cursor) and `←` (delete the character
-before the cursor), a few steps from either end. The selection stays where it
-was after each insert. On a d-pad, `left` and `right` move the cursor directly.
+It covers the screen: the text, edited at its end, over a grid of keys and a
+row of actions, `Aa` (upper or lower case), `#+` (symbols), `Space`, `Del` and
+`OK`. The grid takes as many columns as fit (ten at most) and rows that share
+the height; on a short screen the rows around the selection show. Up, down,
+left and right move over the keys, wrapping, and from the grid to the action
+under it; next and previous go through every key in turn, so two buttons with
+long presses are enough. Click types the selected key. Return cancels, asking
+for a second return when there are unsaved changes.
 
-Each entry reloads the current value with the cursor at its end; only `✓`
-writes to `name`. Return cancels, but with unsaved changes the title turns
-into `Back = discard` and a second return is needed; any other key disarms it.
-The title row also shows the length against the capacity, and dots at the
-ends of the text row mark text scrolled out of view. The callback can inspect
-`input.result` to distinguish save from cancel. A custom nonempty printable
-ASCII `charset` can replace the default letters, digits, space and `-_.`;
-existing characters outside it are kept. Set `input.secret = true` to mask the
-draft with asterisks; editing and the saved value are unchanged. Both buffers, title and charset
-must outlive the popup.
-Text input fits screens from 96x32 and scrolls horizontally to keep the cursor
-visible. The demo's Network → SSID row opens it.
+Pass a charset to limit the keys, such as `"0123456789"` for a PIN: its
+characters make one page, without `Aa` and `#+`, and `Space` only when it
+has a space.
+
+Each entry reloads the current value; only `OK` writes to `name`, and the
+callback can read `input.result` to tell save from cancel. With unsaved changes
+the title turns into `Back = discard` until another key is pressed. Set
+`input.secret = true` to mask the draft with asterisks. Both buffers, title and
+charset must outlive the popup. It fits screens from 64x23; the demo's
+Network → SSID row opens it.
 
 `tm_digit_popup` edits individual decimal digits and the sign; `tm_value_popup`
 adjusts the whole number by a fixed step. The former `tm_spin_popup` API and
@@ -373,7 +372,7 @@ snapshots at 96x64, 128x64, 128x128, 160x80 and 160x128.
 
 | | needs |
 |---|---|
-| text input popup | 96x32 |
+| text input popup | 64x23 (one row of keys at a time); 128x32 shows one row, 128x64 four |
 | list pages, list popup | any width, 32 px height |
 | wave page | 96x64 |
 | value, message, confirm, progress popups | 96x64 (the message popup scrolls at 32 px) |

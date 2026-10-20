@@ -195,7 +195,7 @@ int main(int argc, char **argv)
     snapshot("26_about");
     keys("nnnne");
     snapshot("27_msg_popup");
-    // Nested text input, driven with down/up/click/back only (two buttons).
+    // Nested text input: the keyboard, by next/prev/click/back and by the d-pad.
     char name[48] = "tinymenu-lab-5G-upstairs", scratch[sizeof(name)];
     tm_text_input_popup text;
     if (!tm_text_input_popup_init(&text, &ui, "Device name", name, scratch,
@@ -205,23 +205,24 @@ int main(int argc, char **argv)
     tm_jump_to_page(ui.current_page, &text);
     run(100);
     snapshot("28_text_input");
-    keys("nnnnn"); // the strip moves to 'f'
-    snapshot("29_text_strip");
-    keys("e");      // append 'f'
-    keys("pppppp"); // back past 'a' to the actions
+    keys("nnnnn"); // next along the keys to 'f'
+    snapshot("29_text_keys");
+    keys("e");     // append 'f'
+    keys("u");     // up from the first row wraps to the action under it: Space
     snapshot("30_text_actions");
-    keys("e");     // backspace removes the 'f'
-    keys("ppee");  // cursor left twice
-    keys("ppppe"); // insert '-' between "upstai" and "rs"
+    keys("re");    // Del removes the 'f'
+    keys("lle");   // #+ turns to the symbols
+    keys("de");    // down to the '#' over it, append it
     keys("b");     // unsaved changes: back asks again
     snapshot("31_text_discard");
-    keys("pnnnn"); // disarm, then over to OK
+    keys("ppp");   // disarm, then back past the first key to OK
     ui.params.style.animate = false;
     ui.params.style.highlight = TM_HIGHLIGHT_FRAME;
+    tm_ui_invalidate(&ui); // a still UI redraws only when told
     run(100);
     snapshot("32_text_save");
     keys("e");
-    if (text.result != TM_TEXT_INPUT_SAVED || strcmp(name, "tinymenu-lab-5G-upstai-rs"))
+    if (text.result != TM_TEXT_INPUT_SAVED || strcmp(name, "tinymenu-lab-5G-upstairs#"))
         return 1;
     snapshot("33_text_closed");
     // About -> Check for update: a busy bar, then a download the demo drives from its loop.

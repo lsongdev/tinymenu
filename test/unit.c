@@ -90,8 +90,8 @@ static void test_wrap(void)
 #undef LINES
 }
 
-/* Text editing is transactional and bounded, including capacity == 1, and
- * works from next/prev/click/return alone. */
+/* Text editing is transactional and bounded, including capacity == 1, appends
+ * and deletes at the end, and works from next/prev/click/return alone. */
 static tm_text_input_result callback_result;
 static bool text_cb(const tm_page* page, tm_msg msg) {
     callback_result = ((const tm_text_input_popup*)page)->result;
@@ -100,6 +100,9 @@ static bool text_cb(const tm_page* page, tm_msg msg) {
 static bool text_key(tm_text_input_popup* p, tm_msg msg) {
     tm_ui_send(p->page.ui, msg);
     return p->page.methods->react(p);
+}
+static tm_text_input_action text_action(const tm_text_input_popup* p) {
+    return (tm_text_input_action)p->actions[p->col];
 }
 static void test_text_input(void) {
     uint8_t fb[128 * 64 / 8];
@@ -115,24 +118,30 @@ static void test_text_input(void) {
     CHECK(!tm_text_input_popup_init(&p, &ui, NULL, value, draft, 5, "a\n", NULL));
     char unterminated[] = {'a', 'b'};
     CHECK(!tm_text_input_popup_init(&p, &ui, NULL, unterminated, draft, 2, NULL, NULL));
-    CHECK(tm_text_input_popup_init(&p, &ui, "Name", value, draft, 5, "abc ", text_cb));
-    p.page.methods->in_para_init(&p);
-    CHECK(p.cursor == 2 && p.selected == 0); // cursor at the end, strip on 'a'
 
-    // Two buttons: next/prev walk the ring, click acts, return leaves.
+    // A charset of its own: one page of its keys; its space is the Space action.
+    CHECK(tm_text_input_popup_init(&p, &ui, "Name", value, draft, 5, "abc ", text_cb));
+    CHECK(p.action_n == 3 && p.actions[0] == TM_TEXT_INPUT_SPACE);
+    p.page.methods->in_para_init(&p);
+    CHECK(p.length == 2 && p.row == 0 && p.col == 0); // on 'a'
+
+    // Two buttons: next/prev go through the keys and then the actions, click types.
     text_key(&p, TM_MSG_NEXT); // 'b'
     CHECK(!text_key(&p, TM_MSG_CLICK));
-    CHECK(strcmp(draft, "abb") == 0 && strcmp(value, "ab") == 0 && p.cursor == 3);
+    CHECK(strcmp(draft, "abb") == 0 && strcmp(value, "ab") == 0);
     text_key(&p, TM_MSG_PREV);
-    text_key(&p, TM_MSG_PREV); // 'a' -> backspace, the ring wraps through the actions
-    CHECK(p.selected == 4 + TM_TEXT_INPUT_BACKSPACE);
+    text_key(&p, TM_MSG_PREV); // before 'a': the last action
+    CHECK(p.row == 1 && text_action(&p) == TM_TEXT_INPUT_OK);
+    text_key(&p, TM_MSG_PREV);
+    CHECK(text_action(&p) == TM_TEXT_INPUT_BACKSPACE);
     text_key(&p, TM_MSG_CLICK);
     CHECK(strcmp(draft, "ab") == 0);
     // Return with unsaved changes asks again; anything else disarms it.
-    text_key(&p, TM_MSG_CLICK); // "a"
+    text_key(&p, TM_MSG_PREV); // Space
+    text_key(&p, TM_MSG_CLICK);
+    CHECK(strcmp(draft, "ab ") == 0);
     CHECK(!text_key(&p, TM_MSG_RETURN) && p.discard_armed);
-    text_key(&p, TM_MSG_UP); // a d-pad turns the strip like a wheel: up is the next
-    CHECK(p.selected == 0);
+    text_key(&p, TM_MSG_UP);
     CHECK(!p.discard_armed && !text_key(&p, TM_MSG_RETURN));
     CHECK(text_key(&p, TM_MSG_RETURN));
     CHECK(strcmp(value, "ab") == 0 && callback_result == TM_TEXT_INPUT_CANCELLED);
@@ -141,55 +150,72 @@ static void test_text_input(void) {
     CHECK(strcmp(draft, "ab") == 0 && !p.discard_armed);
     CHECK(text_key(&p, TM_MSG_RETURN));
 
-    // Edit the middle with the cursor actions, then save.
+    // Only the charset, only up to the capacity, and saved by OK.
     p.page.methods->in_para_init(&p);
-    tm_text_input_popup_select_action(&p, TM_TEXT_INPUT_LEFT);
-    text_key(&p, TM_MSG_CLICK);
-    CHECK(p.cursor == 1);
-    tm_text_input_popup_select_char(&p, 'c');
-    text_key(&p, TM_MSG_CLICK);
-    CHECK(strcmp(draft, "acb") == 0 && p.cursor == 2);
-    text_key(&p, TM_MSG_LEFT); // a d-pad moves the cursor directly
-    text_key(&p, TM_MSG_LEFT);
-    CHECK(p.cursor == 0 && !tm_text_input_popup_backspace(&p));
-    text_key(&p, TM_MSG_LEFT);
-    CHECK(p.cursor == 0);
-    CHECK(tm_text_input_popup_insert(&p, ' '));
-    CHECK(!tm_text_input_popup_insert(&p, 'a')); // full, including NUL
-    CHECK(!tm_text_input_popup_insert(&p, 'x')); // outside charset
+    CHECK(!tm_text_input_popup_append(&p, 'x'));
     CHECK(!tm_text_input_popup_select_char(&p, 'x'));
-    CHECK(strcmp(draft, " acb") == 0);
-    text_key(&p, TM_MSG_RIGHT);
-    text_key(&p, TM_MSG_RIGHT);
-    text_key(&p, TM_MSG_RIGHT);
-    text_key(&p, TM_MSG_RIGHT);
-    CHECK(p.cursor == 4);
-    tm_text_input_popup_select_action(&p, TM_TEXT_INPUT_OK);
+    CHECK(tm_text_input_popup_select_char(&p, 'c') && p.row == 0 && p.col == 2);
+    text_key(&p, TM_MSG_CLICK);
+    CHECK(tm_text_input_popup_append(&p, ' '));
+    CHECK(!tm_text_input_popup_append(&p, 'a')); // full, including NUL
+    CHECK(strcmp(draft, "abc ") == 0);
+    CHECK(tm_text_input_popup_select_action(&p, TM_TEXT_INPUT_OK));
+    CHECK(!tm_text_input_popup_select_action(&p, TM_TEXT_INPUT_CASE)); // one page: no Aa
     CHECK(text_key(&p, TM_MSG_CLICK));
-    CHECK(strcmp(value, " acb") == 0 && callback_result == TM_TEXT_INPUT_SAVED);
+    CHECK(strcmp(value, "abc ") == 0 && callback_result == TM_TEXT_INPUT_SAVED);
 
     // The next entry takes fresh application data.
     strcpy(value, "a");
     p.page.methods->in_para_init(&p);
-    CHECK(strcmp(draft, "a") == 0 && p.cursor == 1);
-    CHECK(tm_text_input_popup_backspace(&p) && strcmp(draft, "") == 0 && p.cursor == 0);
+    CHECK(strcmp(draft, "a") == 0 && p.length == 1);
+    CHECK(tm_text_input_popup_backspace(&p) && strcmp(draft, "") == 0);
+    CHECK(!tm_text_input_popup_backspace(&p));
 
-    // Long text scrolls with the cursor and never leaves blank cells behind.
-    char name[48] = "tinymenu-lab-5G-upstairs", scratch[sizeof(name)];
+    // The built-in pages on a d-pad: ten keys a row, the action row under them.
+    char name[48] = "tinymenu", scratch[sizeof(name)];
     CHECK(tm_text_input_popup_init(&p, &ui, NULL, name, scratch, sizeof(name), NULL, NULL));
     p.page.methods->in_para_init(&p);
-    CHECK(p.first_visible > 0 && p.cursor - p.first_visible <= 20);
-    while (tm_text_input_popup_move_cursor(&p, false)) {}
-    CHECK(p.first_visible == 0);
-    while (tm_text_input_popup_move_cursor(&p, true)) {}
-    size_t first = p.first_visible;
-    while (tm_text_input_popup_backspace(&p))
-        CHECK(p.first_visible <= first && p.length - p.first_visible <= 20);
-    CHECK(p.first_visible == 0);
+    CHECK(p.action_n == 5);
+    text_key(&p, TM_MSG_DOWN);
+    text_key(&p, TM_MSG_RIGHT);
+    text_key(&p, TM_MSG_CLICK);
+    CHECK(strcmp(scratch, "tinymenul") == 0); // 'l', under 'b'
+    text_key(&p, TM_MSG_LEFT);
+    text_key(&p, TM_MSG_LEFT); // wraps to the row's end
+    CHECK(p.row == 1 && p.col == 9);
+    tm_text_input_popup_select_char(&p, 'a');
+    text_key(&p, TM_MSG_UP); // above the first row: the action under it, Aa
+    CHECK(p.row == 4 && text_action(&p) == TM_TEXT_INPUT_CASE);
+    CHECK(p.top_row == 1); // four rows fit in 64 px: the first scrolled away
+    text_key(&p, TM_MSG_CLICK); // upper case; the selection stays on Aa
+    CHECK(p.keys == 1 && text_action(&p) == TM_TEXT_INPUT_CASE);
+    text_key(&p, TM_MSG_DOWN); // and wraps back to the first row
+    CHECK(p.row == 0 && p.col == 0 && p.top_row == 0);
+    text_key(&p, TM_MSG_CLICK);
+    CHECK(strcmp(scratch, "tinymenulA") == 0);
+    CHECK(tm_text_input_popup_select_char(&p, '#') && p.keys == 2); // turns to the symbols
+    text_key(&p, TM_MSG_CLICK);
+    CHECK(tm_text_input_popup_select_char(&p, 'z') && p.keys == 0);
+    CHECK(tm_text_input_popup_select_char(&p, ' ') && text_action(&p) == TM_TEXT_INPUT_SPACE);
+    text_key(&p, TM_MSG_CLICK);
+    CHECK(!tm_text_input_popup_append(&p, '\n'));
+    CHECK(strcmp(scratch, "tinymenulA# ") == 0 && strcmp(name, "tinymenu") == 0);
+    // The symbols' short last row: down lands on a key that is there.
+    CHECK(tm_text_input_popup_select_char(&p, '*')); // last column of the first row
+    text_key(&p, TM_MSG_DOWN);
+    text_key(&p, TM_MSG_DOWN);
+    text_key(&p, TM_MSG_DOWN);
+    CHECK(p.row == 3 && p.col == 1); // "}~": the last key there
+    text_key(&p, TM_MSG_DOWN); // the action under '~'
+    CHECK(p.row == 4 && text_action(&p) == TM_TEXT_INPUT_CASE);
+
+    // The built-in pages have every printable character.
+    for (char c = ' '; c <= '~'; c++)
+        CHECK(tm_text_input_popup_select_char(&p, c));
 
     char empty[1] = "", none[1];
     CHECK(tm_text_input_popup_init(&p, &ui, NULL, empty, none, 1, NULL, NULL));
-    CHECK(!tm_text_input_popup_insert(&p, 'a'));
+    CHECK(!tm_text_input_popup_append(&p, 'a'));
     CHECK(!tm_text_input_popup_backspace(&p));
     CHECK(none[0] == 0 && empty[0] == 0);
 }
