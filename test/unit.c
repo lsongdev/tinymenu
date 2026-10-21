@@ -520,6 +520,30 @@ static void test_list_popup(void) {
     CHECK(home_opts[0].content == choices[1].text);
 }
 
+/* On a tall screen the keys stay about as tall as they are wide, the window
+ * shrinks to them and sits in the middle. */
+static void test_text_input_portrait(void) {
+    static uint8_t fb[120 * 160 / 8];
+    tm_ui ui;
+    tm_list_page home;
+    tm_option home_opts[] = {{.text = "Home"}};
+    tm_ui_init(&ui, fb, 120, 160, no_flush, NULL);
+    tm_list_page_init(&home, &ui, 1, home_opts, TM_LIST_NORMAL, NULL);
+    char value[8] = "", draft[8];
+    tm_text_input_popup p;
+    CHECK(tm_text_input_popup_init(&p, &ui, "Name", value, draft, sizeof(value), NULL, NULL));
+    tm_jump_to_page(&home, &p);
+    for (int i = 0; i < 100; i++) tm_ui_proc(&ui, 10);
+    const int key_w = (120 - 2 * 5) / 10;
+    CHECK(ui.indicator.h.pos_tgt + 1 <= key_w);
+    const int above = ui.indicator.y.pos_tgt; // the first key, under the title and text
+    tm_ui_send(&ui, TM_MSG_RETURN); // to the actions, at OK
+    for (int i = 0; i < 100; i++) tm_ui_proc(&ui, 10);
+    const int below = 160 - (ui.indicator.y.pos_tgt + ui.indicator.h.pos_tgt + 1);
+    // the title (10 px) and text (12 px, then 1) sit above the keys, nothing below
+    CHECK(below > 30 && above - 23 == below);
+}
+
 /* A chart is a menu of values: moves, reads like the others, redraws on demand. */
 static void test_chart(void) {
     uint8_t fb[128 * 64 / 8];
@@ -830,6 +854,7 @@ int main(void)
     test_presets();
     test_menu_page();
     test_list_popup();
+    test_text_input_portrait();
     test_chart();
     test_wave();
     test_draw_hook();

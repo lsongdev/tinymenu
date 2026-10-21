@@ -45,7 +45,8 @@ typedef struct {
 } tm_text_input_popup;
 
 /* A keyboard in a window: the title, the text, edited at its end, a grid of
- * keys and a fixed row of actions. No allocation. buffer and draft must be distinct,
+ * keys (no taller than wide; on a tall screen the window shrinks to them, centred)
+ * and a fixed row of actions. No allocation. buffer and draft must be distinct,
  * non-overlapping arrays of capacity bytes, kept alive with title and charset
  * for the popup's lifetime. buffer must contain a NUL-terminated printable
  * ASCII string. charset is a nonempty printable ASCII string whose characters

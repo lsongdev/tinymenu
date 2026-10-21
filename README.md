@@ -136,12 +136,14 @@ if (tm_text_input_popup_init(&input, &ui, "Name", name, draft, sizeof(name), NUL
     tm_jump_to_page(&settings, &input);
 ```
 
-It fills the screen but for a small margin, framed over the blurred page: the
+It fills the screen's width but for a small margin, framed over the blurred page: the
 title and length, the text, edited at its end, a grid of keys, and under it a
 fixed row of actions, `Aa` (lower or upper case letters, each page with the
 digits after them), `#+` (symbols), `Space`, `Del` and `OK`. The grid takes as many columns as fit (ten at most); when its rows do not
 all fit, as many as the screen allows show and scroll between the fixed text
-and actions (too short for both, the actions scroll with the grid).
+and actions (too short for both, the actions scroll with the grid). Keys are
+never taller than they are wide: on a tall screen the window shrinks to them and
+is centred.
 
 Next and previous go along the page's keys (two buttons), up, down, left and
 right move over them (a d-pad), both wrapping; click types the selected key.

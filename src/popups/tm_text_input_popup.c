@@ -92,11 +92,19 @@ static uint8_t layout_rows(const tm_text_input_popup* p) {
 }
 static int16_t head_h(const tm_text_input_popup* p) { return inner_h(p) >= 40 ? HEAD_H : 0; }
 static int16_t keys_top(const tm_text_input_popup* p) { return head_h(p) + BOX_H + 1; }
-static int16_t keys_room(const tm_text_input_popup* p) { return inner_h(p) - keys_top(p); }
-/* Rows share the room under the text; when that makes them too short, fewer show. */
+static int16_t keys_space(const tm_text_input_popup* p) { return inner_h(p) - keys_top(p); }
+/* Rows share the room under the text, up to keys as tall as they are wide (a tall
+ * screen leaves the rest); when that makes them too short, fewer show. */
 static int16_t key_h(const tm_text_input_popup* p) {
-    return MAX(keys_room(p) / layout_rows(p), KEY_MIN_H);
+    const int16_t square = MAX(inner_w(p) / cols(p), KEY_MIN_H);
+    return MIN(MAX(keys_space(p) / layout_rows(p), KEY_MIN_H), square);
 }
+/* Height the keys take; the window shrinks to it and is centred. */
+static int16_t keys_room(const tm_text_input_popup* p) {
+    return MIN(keys_space(p), (int16_t)(layout_rows(p) * key_h(p)));
+}
+/* Space left above (and below) the window on a tall screen. */
+static int16_t win_top(const tm_text_input_popup* p) { return (keys_space(p) - keys_room(p)) / 2; }
 /* The action row stays at the bottom and only the grid scrolls, when there is room
  * for a row of each; on shorter screens the action row scrolls with the grid. */
 static bool actions_fixed(const tm_text_input_popup* p) { return keys_room(p) >= 2 * key_h(p); }
@@ -188,8 +196,8 @@ static void set_actions(tm_text_input_popup* p) {
 //------- Drawing
 static void draw(tm_text_input_popup* p) {
     tm_ui* ui = p->page.ui;
-    const int16_t iw = inner_w(p), ox = INSET_X, oy = INSET + p->win_y.pos_cur;
-    const int16_t win_w = ui->fb.w - 2 * MARGIN, win_h = screen_h(p) - 2 * MARGIN;
+    const int16_t iw = inner_w(p), ox = INSET_X, oy = INSET + win_top(p) + p->win_y.pos_cur;
+    const int16_t win_w = ui->fb.w - 2 * MARGIN, win_h = screen_h(p) - 2 * MARGIN - 2 * win_top(p);
     tm_fb_set_color(&ui->fb, TM_PEN_BLACK);
     tm_canvas_draw_rbox(&ui->w_all, MARGIN, oy - INSET + MARGIN, win_w, win_h, tm_ui_radius(ui, 3));
     tm_fb_set_color(&ui->fb, TM_PEN_WHITE);
@@ -481,7 +489,7 @@ static void indicator(tm_page_addr addr) {
     int16_t x, w;
     key_x(p, p->row, p->col, &x, &w);
     ui->indicator.x.pos_tgt = INSET_X + x + 1;
-    ui->indicator.y.pos_tgt = p->win_y.pos_tgt + INSET + keys_top(p) + row_y(p, p->row);
+    ui->indicator.y.pos_tgt = p->win_y.pos_tgt + INSET + win_top(p) + keys_top(p) + row_y(p, p->row);
     ui->indicator.w.pos_tgt = w - 2;
     ui->indicator.h.pos_tgt = key_h(p) - 1;
     tm_ui_draw_highlight(ui, 2);
